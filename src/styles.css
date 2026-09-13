@@ -1,0 +1,105 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+
+  /* Identidad visual: verde Los Cedros */
+  --color-pine-50: #f4f7f4;
+  --color-pine-100: #e5ece7;
+  --color-pine-200: #cbdacc;
+  --color-pine-300: #a5c0aa;
+  --color-pine-400: #7aa084;
+  --color-pine-500: #578265;
+  --color-pine-600: #41684f;
+  --color-pine-700: #33533f;
+  --color-pine-800: #2a4435;
+  --color-pine-900: #1d3026;
+  --color-pine-950: #0f1b14;
+}
+
+@layer base {
+  * { box-sizing: border-box; }
+  html { background: #ffffff; color-scheme: light; }
+  body {
+    margin: 0; min-width: 320px; min-height: 100dvh;
+    color: #26352c; font-family: var(--font-sans);
+    background: #f7f8f7; -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
+  }
+  button, input, textarea { font: inherit; }
+  button { touch-action: manipulation; cursor: pointer; }
+  button:disabled { cursor: not-allowed; opacity: 0.45; }
+  :focus-visible { outline: 2px solid rgba(51, 83, 63, 0.5); outline-offset: 2px; }
+}
+
+@utility btn {
+  @apply inline-flex min-h-10 items-center justify-center gap-2 rounded-lg px-4 text-sm font-semibold transition-colors duration-150;
+}
+
+@layer components {
+  /* ---- Títulos y texto ---- */
+  .page-title { @apply text-2xl font-semibold tracking-tight text-pine-950 sm:text-[1.7rem]; }
+  .section-title { @apply text-base font-semibold tracking-tight text-pine-950; }
+  .section-caption { @apply mt-1 text-sm text-slate-500; }
+
+  /* ---- Botones ---- */
+  .btn-primary { @apply btn bg-pine-800 text-white hover:bg-pine-900 disabled:hover:bg-pine-800; }
+  .btn-secondary { @apply btn border border-slate-300 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900; }
+  .btn-ghost { @apply btn border border-transparent bg-transparent px-3 text-slate-500 hover:bg-slate-100 hover:text-slate-800; }
+  .btn-danger { @apply btn border border-transparent bg-transparent text-red-700 hover:bg-red-50; }
+
+  /* ---- Campos ---- */
+  .field-label { @apply mb-1.5 block text-[13px] font-medium text-slate-700; }
+  .field {
+    @apply min-h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-[15px] text-pine-950 shadow-none
+    placeholder:text-slate-400 focus:border-pine-600 focus:ring-2 focus:ring-pine-600/20 focus:outline-none transition-colors;
+  }
+  .field-invalid { @apply border-red-400 bg-red-50/30 focus:border-red-500 focus:ring-red-500/15; }
+  .field-error { @apply mt-1.5 text-[13px] leading-snug text-red-700; }
+  .field-hint { @apply mt-1.5 text-[13px] text-slate-500; }
+
+  /* ---- Tarjetas ---- */
+  .card { @apply rounded-xl border border-slate-200 bg-white; }
+  .card-flat { @apply rounded-xl border border-slate-200 bg-white; }
+
+  /* ---- Datos ---- */
+  .meta-label { @apply text-[11px] font-medium uppercase tracking-wide text-slate-400; }
+  .meta-value { @apply text-sm text-slate-700; }
+
+  /* ---- Resumen del día ---- */
+  .stat-label { @apply text-[11px] font-medium uppercase tracking-wide text-slate-400; }
+  .stat-value { @apply text-[1.4rem] font-semibold leading-tight tabular-nums text-pine-950; }
+
+  /* ---- Pestañas ---- */
+  .tab {
+    @apply -mb-px inline-flex min-h-12 items-center gap-2 border-b-2 border-transparent px-3.5 text-sm font-medium
+    text-slate-500 transition-colors hover:text-slate-800 sm:px-4;
+  }
+  .tab-active { @apply border-pine-700 font-semibold text-pine-900; }
+
+  /* ---- Segmento de filtros ---- */
+  .segment-btn {
+    @apply inline-flex min-h-10 items-center gap-1.5 rounded-md px-3 text-sm font-medium text-slate-500
+    transition-colors hover:text-slate-800;
+  }
+  .segment-btn-active { @apply bg-slate-100 font-semibold text-pine-900; }
+
+  /* ---- Etiqueta de grupo ---- */
+  .group-label { @apply text-[11px] font-semibold uppercase tracking-wide text-slate-400; }
+
+  /* ---- Contador desayuno ---- */
+  .counter-button {
+    @apply grid size-12 place-items-center rounded-lg border border-slate-300 bg-white text-2xl leading-none text-pine-900
+    transition-colors hover:bg-slate-50 disabled:hover:bg-white select-none;
+  }
+  .counter-button-add { @apply border-pine-800 bg-pine-800 text-white hover:bg-pine-900 disabled:hover:bg-pine-800; }
+
+  /* ---- Inventario ---- */
+  .stock-input {
+    @apply min-h-10 w-full rounded-lg border border-slate-300 bg-white px-2 text-center text-[15px] font-semibold tabular-nums
+    text-pine-950 placeholder:text-slate-300 focus:border-pine-600 focus:ring-2 focus:ring-pine-600/20 focus:outline-none transition-colors;
+  }
+
+  /* ---- Utilidades de navegación de fecha ---- */
+  .date-arrow { @apply grid size-10 place-items-center rounded-lg bg-slate-100 text-2xl leading-none text-slate-600 transition-colors hover:bg-slate-200 disabled:opacity-40; }
+  .mini-button { @apply grid size-9 place-items-center rounded-md border border-slate-200 bg-white text-sm text-slate-600 transition-colors hover:bg-slate-50; }
+}

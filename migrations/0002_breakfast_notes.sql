@@ -1,0 +1,1 @@
+ALTER TABLE stays ADD COLUMN breakfast_notes TEXT CHECK (breakfast_notes IS NULL OR length(breakfast_notes) <= 300);
