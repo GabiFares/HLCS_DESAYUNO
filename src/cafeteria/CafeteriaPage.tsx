@@ -78,13 +78,13 @@ function DayContent({ date }: { date: string }) {
     setBreakfast(value);
   }, []);
 
-  const refreshBreakfast = useCallback(async (signal?: AbortSignal) => {
+  const refreshBreakfast = useCallback(async (signal?: AbortSignal, quiet = false) => {
     if (desiredCounts.current.size > 0) return;
     try {
       const value = await api.breakfastDay(date, signal);
       if (mounted.current) applyBreakfast(value);
     } catch (caught) {
-      if (!(caught instanceof DOMException && caught.name === "AbortError") && mounted.current) {
+      if (!(caught instanceof DOMException && caught.name === "AbortError") && mounted.current && !quiet) {
         setError(errorMessage(caught));
       }
     }
@@ -130,9 +130,9 @@ function DayContent({ date }: { date: string }) {
 
   useEffect(() => {
     if (date !== todayInUruguay()) return;
-    const interval = window.setInterval(() => void refreshBreakfast(), 15_000);
+    const interval = window.setInterval(() => void refreshBreakfast(undefined, true), 15_000);
     const refreshWhenVisible = () => {
-      if (document.visibilityState === "visible") void refreshBreakfast();
+      if (document.visibilityState === "visible") void refreshBreakfast(undefined, true);
     };
     document.addEventListener("visibilitychange", refreshWhenVisible);
     return () => {

@@ -122,6 +122,10 @@ try {
   await reception.waitFor("document.body.innerText.includes('Estadías con desayuno')");
   await cafeteria.waitFor("document.body.innerText.includes('Servicio de desayuno')");
 
+  await cafeteria.send("Page.addScriptToEvaluateOnNewDocument", {
+    source: "sessionStorage.setItem('hlcs-reloads', String((Number(sessionStorage.getItem('hlcs-reloads')) || 0) + 1));",
+  });
+
   await reception.evaluate(`([...document.querySelectorAll('button')].find((button) => button.textContent.includes('Nueva'))).click()`);
   await reception.waitFor("Boolean(document.querySelector('[role=dialog]'))");
   const today = todayInUruguay();
@@ -210,6 +214,54 @@ try {
     throw new Error(`Autosave/recarga de navegador falló: ${JSON.stringify(persistedBrowserValues)}`);
   }
   console.log("J/K BROWSER PASS — inventario decimal y nota persisten tras recargar la página");
+
+  const loadsAtCheckStart = (await cafeteria.evaluate("Number(sessionStorage.getItem('hlcs-reloads')) || 0"));
+  await cafeteria.evaluate(`(() => {
+    const q = document.querySelector('input[type=search]');
+    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
+    setter.call(q, ${JSON.stringify(room)});
+    q.dispatchEvent(new Event('input', { bubbles: true }));
+    document.querySelector('#tab-stock').click();
+    return true;
+  })()`);
+  await cafeteria.waitFor(`document.querySelector('#tab-stock').getAttribute('aria-selected') === 'true'`);
+  const pollStateBefore = await cafeteria.evaluate(`(() => ({
+    stock: document.querySelector('#tab-stock').getAttribute('aria-selected'),
+    rooms: document.querySelector('#tab-rooms').getAttribute('aria-selected'),
+    stockVisible: document.querySelector('#panel-stock').hidden === false,
+    roomsVisible: document.querySelector('#panel-rooms').hidden === false,
+    date: document.querySelector('input[type=date]').value,
+    search: document.querySelector('input[type=search]').value,
+  }))()`);
+  await new Promise((resolve) => setTimeout(resolve, 17_000));
+  const pollStateAfter = await cafeteria.evaluate(`(() => ({
+    stock: document.querySelector('#tab-stock').getAttribute('aria-selected'),
+    rooms: document.querySelector('#tab-rooms').getAttribute('aria-selected'),
+    stockVisible: document.querySelector('#panel-stock').hidden === false,
+    roomsVisible: document.querySelector('#panel-rooms').hidden === false,
+    date: document.querySelector('input[type=date]').value,
+    search: document.querySelector('input[type=search]').value,
+  }))()`);
+  const loadsAtCheckEnd = (await cafeteria.evaluate("Number(sessionStorage.getItem('hlcs-reloads')) || 0"));
+  const tabPersisted = pollStateAfter.stock === "true" && pollStateAfter.rooms === "false"
+    && pollStateAfter.stockVisible && !pollStateAfter.roomsVisible;
+  const searchPersisted = pollStateAfter.search === pollStateBefore.search;
+  const datePersisted = pollStateAfter.date === pollStateBefore.date;
+  const noReload = loadsAtCheckEnd === loadsAtCheckStart;
+  if (!tabPersisted || !searchPersisted || !datePersisted || !noReload) {
+    throw new Error(`El refresh automático reseteó la pantalla: antes=${JSON.stringify(pollStateBefore)} después=${JSON.stringify(pollStateAfter)} cargas=${loadsAtCheckStart}->${loadsAtCheckEnd}`);
+  }
+  await cafeteria.evaluate(`document.querySelector('#tab-rooms').click()`);
+  await cafeteria.waitFor(`document.querySelector('#tab-rooms').getAttribute('aria-selected') === 'true'`);
+  const backOnRooms = await cafeteria.evaluate(`(() => {
+    const search = document.querySelector('input[type=search]').value;
+    const card = [...document.querySelectorAll('article')].find((article) => article.innerText.includes(${JSON.stringify(room)}));
+    return { search, row: Boolean(card) };
+  })()`);
+  if (!backOnRooms.row || backOnRooms.search !== room) {
+    throw new Error(`Al volver a Habitaciones se perdió la búsqueda o la fila: ${JSON.stringify(backOnRooms)}`);
+  }
+  console.log("N PASS — un refresh automático mantiene la pestaña activa, la fecha y la búsqueda sin recargar la página");
 
   for (const width of [390, 768, 1280]) {
     const receptionAudit = await audit(reception, "recepcion", width);
