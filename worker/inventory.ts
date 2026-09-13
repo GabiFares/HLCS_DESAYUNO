@@ -49,20 +49,16 @@ export async function createProduct(db: D1Database, request: Request): Promise<R
   const body = await readJson(request);
   const name = requiredText(body.name, "El nombre", 100);
   const unit = optionalText(body.unit, "La unidad", 20);
+  const duplicate = await db.prepare("SELECT id FROM products WHERE name = ?")
+    .bind(name).first<{ id: number }>();
+  if (duplicate) throw new HttpError(409, "Ya existe un producto con ese nombre.", "duplicate_product");
   const order = await db.prepare("SELECT COALESCE(MAX(display_order), 0) + 1 AS next_order FROM products")
     .first<{ next_order: number }>();
-  try {
-    const result = await db.prepare("INSERT INTO products (name, unit, display_order) VALUES (?, ?, ?)")
-      .bind(name, unit, order?.next_order ?? 1).run();
-    const row = await db.prepare("SELECT id, name, unit, active, display_order FROM products WHERE id = ?")
-      .bind(result.meta.last_row_id).first<ProductRow>();
-    return json({ product: row ? mapProduct(row) : null }, { status: 201 });
-  } catch (error) {
-    if (error instanceof Error && error.message.toLowerCase().includes("unique")) {
-      throw new HttpError(409, "Ya existe un producto con ese nombre.", "duplicate_product");
-    }
-    throw error;
-  }
+  const result = await db.prepare("INSERT INTO products (name, unit, display_order) VALUES (?, ?, ?)")
+    .bind(name, unit, order?.next_order ?? 1).run();
+  const row = await db.prepare("SELECT id, name, unit, active, display_order FROM products WHERE id = ?")
+    .bind(result.meta.last_row_id).first<ProductRow>();
+  return json({ product: row ? mapProduct(row) : null }, { status: 201 });
 }
 
 export async function updateProduct(db: D1Database, request: Request, rawProductId: string): Promise<Response> {
@@ -75,16 +71,14 @@ export async function updateProduct(db: D1Database, request: Request, rawProduct
   const unit = body.unit === undefined ? current.unit : optionalText(body.unit, "La unidad", 20);
   const active = body.active === undefined ? current.active === 1 : body.active;
   if (typeof active !== "boolean") throw new HttpError(400, "El estado del producto no es válido.", "validation_error");
-  try {
-    await db.prepare(
-      "UPDATE products SET name = ?, unit = ?, active = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
-    ).bind(name, unit, active ? 1 : 0, id).run();
-  } catch (error) {
-    if (error instanceof Error && error.message.toLowerCase().includes("unique")) {
-      throw new HttpError(409, "Ya existe un producto con ese nombre.", "duplicate_product");
-    }
-    throw error;
+  if (body.name !== undefined) {
+    const duplicate = await db.prepare("SELECT id FROM products WHERE name = ? AND id != ?")
+      .bind(name, id).first<{ id: number }>();
+    if (duplicate) throw new HttpError(409, "Ya existe un producto con ese nombre.", "duplicate_product");
   }
+  await db.prepare(
+    "UPDATE products SET name = ?, unit = ?, active = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+  ).bind(name, unit, active ? 1 : 0, id).run();
   const row = await db.prepare("SELECT id, name, unit, active, display_order FROM products WHERE id = ?")
     .bind(id).first<ProductRow>();
   return json({ product: row ? mapProduct(row) : null });

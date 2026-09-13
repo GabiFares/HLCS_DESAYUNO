@@ -41,17 +41,16 @@ export async function updateBreakfastCount(db: D1Database, request: Request, raw
   if (servedCount > eligible.guest_count) {
     throw new HttpError(409, `No se pueden registrar más de ${eligible.guest_count} desayunos.`, "count_above_guests");
   }
-  try {
-    await db.prepare(
-      `INSERT INTO breakfast_daily_status (stay_id, service_date, served_count) VALUES (?, ?, ?)
-       ON CONFLICT(stay_id, service_date) DO UPDATE SET served_count = excluded.served_count,
-       updated_at = CURRENT_TIMESTAMP`,
-    ).bind(stayId, date, servedCount).run();
-  } catch (error) {
-    if (error instanceof Error && error.message.includes("invalid breakfast count or date")) {
-      throw new HttpError(409, "La cantidad de pasajeros cambió. La pantalla se actualizará con el nuevo valor.", "stale_guest_count");
-    }
-    throw error;
+  const result = await db.prepare(
+    `INSERT INTO breakfast_daily_status (stay_id, service_date, served_count)
+     SELECT ?, ?, ? FROM stays
+     WHERE id = ? AND ? BETWEEN check_in_date AND check_out_date
+     AND (completed_on IS NULL OR completed_on > ?) AND ? <= guest_count
+     ON CONFLICT(stay_id, service_date) DO UPDATE SET served_count = excluded.served_count,
+     updated_at = CURRENT_TIMESTAMP`,
+  ).bind(stayId, date, servedCount, stayId, date, date, servedCount).run();
+  if (Number(result.meta.changes) === 0) {
+    throw new HttpError(409, "La cantidad de pasajeros cambió. La pantalla se actualizará con el nuevo valor.", "stale_guest_count");
   }
   return json({ stayId, date, servedCount });
 }

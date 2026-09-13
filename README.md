@@ -56,6 +56,8 @@ scripts/           Verificaciones locales repetibles
 
 Las relaciones hacia estadías y productos usan claves foráneas. Los índices priorizan consultas por fechas y orden del catálogo. Los triggers de desayuno impiden guardar un contador mayor que los pasajeros o fuera de las fechas de la estadía. Otro trigger recorta automáticamente el contador si recepción reduce los pasajeros; por ejemplo, `3/3` pasa atómicamente a `2/2`, nunca a `3/2`.
 
+Una estadía se puede eliminar desde recepción siempre que no tenga desayunos registrados (`served_count > 0`): en ese caso la API responde `409` y el historial queda intacto. Los registros en cero no bloquean la eliminación. La clave foránea `ON DELETE RESTRICT` es la última barrera a nivel de base, de modo que un borrado nunca pierde el historial de desayunos.
+
 ## Fechas y regla de cierre
 
 Check-in, check-out, fecha de desayuno, inventario, nota y finalización se almacenan como fechas calendario `YYYY-MM-DD`. No se convierten a timestamps UTC. “Hoy” se calcula explícitamente en `America/Montevideo`, evitando que un cambio de zona horaria desplace el día operativo del hotel.

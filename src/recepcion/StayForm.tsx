@@ -83,7 +83,7 @@ export function StayForm({ stay, onClose, onSaved, onDeleted }: StayFormProps) {
   }
 
   async function remove() {
-    if (!stay || !window.confirm(`¿Eliminar la estadía de la habitación ${stay.roomNumber}? También se eliminará su historial asociado.`)) return;
+    if (!stay || !window.confirm(`¿Eliminar la estadía de la habitación ${stay.roomNumber}? Si ya tiene desayunos registrados no se podrá eliminar.`)) return;
     setSaving(true);
     setServerError("");
     try {

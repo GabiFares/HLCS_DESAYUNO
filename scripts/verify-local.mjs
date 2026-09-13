@@ -97,6 +97,27 @@ try {
   assert(emptyM.breakfastNotes === null, "M: sin aclaración enviada debería venir null");
   console.log("M PASS — la aclaración de desayuno se guarda, llega a cafetería, se edita y se limpia");
 
+  const stayN = await createStay(`QA-N-${suffix}`, today, tomorrow, 2);
+  await call(`/api/breakfast/${today}/stays/${stayN.id}`, { method: "PATCH", body: JSON.stringify({ servedCount: 1 }) });
+  const deleteWithHistory = await fetch(`${baseUrl}/api/stays/${stayN.id}`, { method: "DELETE" });
+  assert(deleteWithHistory.status === 409, "N: eliminar una estadía con desayunos debería rechazarse");
+  day = await call(`/api/breakfast/${today}`);
+  assert(day.stays.some((stay) => stay.stayId === stayN.id && stay.servedCount === 1), "N: el historial se perdió al rechazar el borrado");
+  console.log("N PASS — la eliminación con desayunos registrados se rechaza y el historial queda intacto");
+
+  const stayO = await createStay(`QA-O-${suffix}`, today, tomorrow, 1);
+  const deleteWithoutHistory = await call(`/api/stays/${stayO.id}`, { method: "DELETE" });
+  assert(deleteWithoutHistory === undefined, "O: eliminar una estadía sin desayunos debería funcionar");
+  day = await call(`/api/breakfast/${today}`);
+  assert(!day.stays.some((stay) => stay.stayId === stayO.id), "O: la estadía siguió apareciendo tras el borrado");
+  console.log("O PASS — la eliminación sin desayunos registrados funciona");
+
+  const stayP = await createStay(`QA-P-${suffix}`, today, tomorrow, 1);
+  await call(`/api/breakfast/${today}/stays/${stayP.id}`, { method: "PATCH", body: JSON.stringify({ servedCount: 0 }) });
+  const deleteZeroServed = await call(`/api/stays/${stayP.id}`, { method: "DELETE" });
+  assert(deleteZeroServed === undefined, "P: eliminar una estadía con registros en cero debería funcionar");
+  console.log("P PASS — los registros en cero no bloquean la eliminación");
+
   const servedSum = day.stays.reduce((sum, stay) => sum + stay.servedCount, 0);
   assert(day.totalServed === servedSum, `I: total ${day.totalServed} distinto de suma ${servedSum}`);
   console.log(`I PASS — total diario ${day.totalServed} coincide con suma de registros`);

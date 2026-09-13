@@ -1,4 +1,5 @@
 import type { Stay } from "../../shared/types";
+import { ExpandableNote } from "../components/ExpandableNote";
 import { formatDate } from "../lib/dates";
 
 export function StayCard({ stay, today, onEdit, onComplete }: {
@@ -36,10 +37,9 @@ export function StayCard({ stay, today, onEdit, onComplete }: {
       </div>
 
       {stay.breakfastNotes && (
-        <p className="mt-2 flex items-start gap-1.5 border-t border-slate-100 pt-2.5 text-sm leading-snug text-slate-600">
-          <svg aria-hidden className="mt-0.5 size-3.5 shrink-0 text-pine-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="9" /><path d="M12 11v5M12 8h.01" /></svg>
-          <span className="line-clamp-2">{stay.breakfastNotes}</span>
-        </p>
+        <div className="mt-2 border-t border-slate-100 pt-2.5">
+          <ExpandableNote note={stay.breakfastNotes} />
+        </div>
       )}
     </article>
   );

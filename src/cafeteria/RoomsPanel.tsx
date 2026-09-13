@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import type { BreakfastDay, BreakfastStay } from "../../shared/types";
 import { EmptyState } from "../components/Feedback";
+import { ExpandableNote } from "../components/ExpandableNote";
 import { formatDate, todayInUruguay } from "../lib/dates";
 
 type Filter = "all" | "pending" | "complete";
@@ -40,12 +41,7 @@ function RoomRow({ stay, isFuture, saving, onCount }: {
           {saving && <span className="text-[11px] text-slate-400">Guardando…</span>}
         </div>
         <p className="mt-0.5 text-xs text-slate-500">Check-out {formatDate(stay.checkOutDate)}</p>
-        {stay.breakfastNotes && (
-          <p className="mt-1 flex items-start gap-1.5 text-[13px] text-slate-600">
-            <svg aria-hidden className="mt-0.5 size-3.5 shrink-0 text-pine-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="9" /><path d="M12 11v5M12 8h.01" /></svg>
-            <span className="line-clamp-2">{stay.breakfastNotes}</span>
-          </p>
-        )}
+        {stay.breakfastNotes && <ExpandableNote note={stay.breakfastNotes} />}
       </div>
 
       <div className="shrink-0 text-right">

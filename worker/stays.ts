@@ -103,6 +103,25 @@ export async function updateStay(db: D1Database, request: Request, rawId: string
 export async function deleteStay(db: D1Database, rawId: string): Promise<Response> {
   const id = parseId(rawId, "identificador de estadía");
   await getStay(db, id);
-  await db.prepare("DELETE FROM stays WHERE id = ?").bind(id).run();
+  const history = await db.prepare(
+    "SELECT 1 FROM breakfast_daily_status WHERE stay_id = ? AND served_count > 0 LIMIT 1",
+  ).bind(id).first();
+  if (history) {
+    throw new HttpError(409, "No se puede eliminar la estadía porque ya tiene desayunos registrados.", "stay_has_breakfast_history");
+  }
+  try {
+    await db.batch([
+      db.prepare("DELETE FROM breakfast_daily_status WHERE stay_id = ? AND served_count = 0").bind(id),
+      db.prepare("DELETE FROM stays WHERE id = ?").bind(id),
+    ]);
+  } catch (error) {
+    const raced = await db.prepare(
+      "SELECT 1 FROM breakfast_daily_status WHERE stay_id = ? AND served_count > 0 LIMIT 1",
+    ).bind(id).first();
+    if (raced) {
+      throw new HttpError(409, "No se puede eliminar la estadía porque ya tiene desayunos registrados.", "stay_has_breakfast_history");
+    }
+    throw error;
+  }
   return new Response(null, { status: 204 });
 }

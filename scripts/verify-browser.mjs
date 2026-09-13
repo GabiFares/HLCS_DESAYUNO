@@ -132,7 +132,7 @@ try {
   await reception.evaluate(`(() => {
     const textarea = document.querySelector('[role="dialog"] textarea');
     const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value').set;
-    setter.call(textarea, ${JSON.stringify("necesita huevo extra")});
+    setter.call(textarea, ${JSON.stringify("necesita huevo extra y es celíaco; no toma azúcar, prefiere leche descremada, pan sin sal y fruta de temporada; pide café descafeinado, jugo de naranja fresco y yogurt durazno temprano")});
     textarea.dispatchEvent(new Event('input', { bubbles: true }));
   })()`);
   await reception.evaluate("document.querySelector('[role=dialog] form').requestSubmit()");
@@ -165,10 +165,22 @@ try {
     return card?.innerText.replace(/\\s+/g, ' ') ?? '';
   })()`);
   if (!cafeteriaCard.includes("3")) throw new Error(`Polling no reflejó 3 pasajeros: ${cafeteriaCard}`);
-  if (!cafeteriaCard.includes("necesita huevo extra")) throw new Error(`La aclaración de desayuno no llegó a cafetería: ${cafeteriaCard}`);
-  const receptionHasNote = await reception.evaluate(`document.body.innerText.includes(${JSON.stringify("necesita huevo extra")})`);
+  if (!cafeteriaCard.includes("necesita huevo extra y es celíaco; no toma azúcar, prefiere leche descremada, pan sin sal y fruta de temporada; pide café descafeinado, jugo de naranja fresco y yogurt durazno temprano")) throw new Error(`La aclaración de desayuno no llegó a cafetería: ${cafeteriaCard}`);
+  const receptionHasNote = await reception.evaluate(`document.body.innerText.includes(${JSON.stringify("necesita huevo extra y es celíaco; no toma azúcar, prefiere leche descremada, pan sin sal y fruta de temporada; pide café descafeinado, jugo de naranja fresco y yogurt durazno temprano")})`);
   if (!receptionHasNote) throw new Error("La aclaración no se ve en la tarjeta de recepción");
-  console.log(`M PASS — ambas rutas abiertas; cafetería mostró ${room} con su aclaración y actualizó 2→3 mediante polling`);
+  const noteToggleShown = await cafeteria.evaluate(`(() => {
+    const card = [...document.querySelectorAll('article')].find((article) => article.innerText.includes(${JSON.stringify(room)}));
+    const button = card ? [...card.querySelectorAll('button')].find((item) => item.textContent.includes('Ver más')) : null;
+    if (!button) return false;
+    button.click();
+    return true;
+  })()`);
+  if (!noteToggleShown) throw new Error("La aclaración larga no mostró el botón 'Ver más'");
+  await cafeteria.waitFor(`(() => {
+    const card = [...document.querySelectorAll('article')].find((article) => article.innerText.includes(${JSON.stringify(room)}));
+    return card ? card.innerText.includes('Ver menos') : false;
+  })()`, 3000);
+  console.log("M PASS — ambas rutas abiertas; cafetería mostró la aclaración y 'Ver más' la expande por completo");
 
   const inventory = await fetch(`${appUrl}/api/inventory/${today}`).then((response) => response.json());
   const firstProduct = inventory.items[0];
