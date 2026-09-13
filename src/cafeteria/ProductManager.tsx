@@ -148,7 +148,7 @@ export function ProductManager({ onChanged }: { onChanged: () => void }) {
               <button type="button" disabled={index === 0} onClick={() => void move(index, -1)} className="mini-button" aria-label={`Subir ${product.name}`}>↑</button>
               <button type="button" disabled={index === products.length - 1} onClick={() => void move(index, 1)} className="mini-button" aria-label={`Bajar ${product.name}`}>↓</button>
               <button type="button" onClick={() => beginEdit(product)} className="mini-button" aria-label={`Editar ${product.name}`}>✎</button>
-              <button type="button" onClick={() => void toggle(product)} className="min-h-9 rounded-lg px-2 text-xs font-semibold text-pine-700 hover:bg-pine-50">{product.active ? "Ocultar" : "Activar"}</button>
+              <button type="button" onClick={() => void toggle(product)} className="min-h-9 rounded-md px-2 text-xs font-semibold text-pine-700 hover:bg-pine-50">{product.active ? "Ocultar" : "Activar"}</button>
             </div>
           )}
         </div>

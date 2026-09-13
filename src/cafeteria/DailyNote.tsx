@@ -28,7 +28,7 @@ export function DailyNote({ date, initialContent }: { date: string; initialConte
   }
 
   return (
-    <section aria-labelledby="note-title" className="rounded-lg border border-slate-200 bg-white px-4 py-4 sm:px-5">
+    <section aria-labelledby="note-title" className="rounded-xl border border-slate-200 bg-white px-4 py-4 sm:px-5">
       <div className="mb-2 flex items-center gap-3">
         <h2 id="note-title" className="text-base font-semibold tracking-tight text-pine-950">Nota del día</h2>
         <span className="h-px flex-1 bg-slate-100" aria-hidden />

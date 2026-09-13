@@ -22,7 +22,7 @@ export function CafeteriaPage() {
   return (
     <div className="min-h-dvh bg-[#f7f8f7]">
       <PageHeader eyebrow="Cafetería" title="Servicio de desayuno" />
-      <main className="mx-auto max-w-6xl px-4 py-5 sm:px-6 sm:py-7">
+      <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8">
         <DateNavigator date={date} onChange={setDate} />
         <DayContent key={date} date={date} />
       </main>
@@ -33,25 +33,25 @@ export function CafeteriaPage() {
 function DaySummary({ day }: { day: BreakfastDay }) {
   const pending = day.stays.filter((stay) => stay.servedCount < stay.guestCount).length;
   return (
-    <div aria-live="polite" className="grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-slate-200 bg-slate-200 sm:grid-cols-4">
-      <div className="flex flex-col items-center gap-1 bg-white px-3 py-3">
+    <div aria-live="polite" className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border-t-2 border-pine-700 bg-slate-200 sm:grid-cols-4">
+      <div className="flex flex-col items-center gap-0.5 bg-white px-3 py-2.5">
         <p className="stat-label">Habitaciones</p>
         <p className="stat-value">{day.stays.length}</p>
       </div>
-      <div className="flex flex-col items-center gap-1 bg-white px-3 py-3">
+      <div className="flex flex-col items-center gap-0.5 bg-white px-3 py-2.5">
         <p className="stat-label">Pendientes</p>
         <p className={`stat-value ${pending === 0 ? "text-pine-700" : "text-amber-700"}`}>{pending}</p>
       </div>
-      <div className="flex flex-col items-center gap-1 bg-white px-3 py-3">
+      <div className="flex flex-col items-center gap-0.5 bg-white px-3 py-2.5">
         <p className="stat-label">Servidos</p>
         <p className="stat-value">{day.totalServed}</p>
       </div>
-      <div className="flex flex-col items-center justify-center gap-1 bg-white px-3 py-3">
+      <div className="flex flex-col items-center justify-center gap-0.5 bg-white px-3 py-2.5">
         <span className="flex items-center gap-1.5">
           <span aria-hidden className={`size-2 rounded-full ${day.canClose ? "bg-pine-600" : "bg-amber-500"}`} />
-          <span className="text-[11px] font-medium text-slate-400">Estado del día</span>
+          <span className="stat-label">Estado</span>
         </span>
-        <p className={`text-sm font-semibold leading-tight ${day.canClose ? "text-pine-800" : "text-amber-800"}`}>
+        <p className={`text-[13px] font-semibold leading-tight ${day.canClose ? "text-pine-800" : "text-amber-800"}`}>
           {day.canClose ? "Puede cerrar" : "Faltan pendientes"}
         </p>
       </div>
@@ -187,7 +187,7 @@ function DayContent({ date }: { date: string }) {
         <>
           <DaySummary day={breakfast} />
 
-          <nav role="tablist" aria-label="Secciones del día" className="mt-6 flex items-end gap-1 overflow-x-auto border-b border-slate-200">
+          <nav role="tablist" aria-label="Secciones del día" className="mt-5 flex items-end gap-1 overflow-x-auto border-b border-slate-200">
             {TABS.map((tab) => (
               <button key={tab.id} type="button" id={`tab-${tab.id}`} role="tab" aria-selected={activeTab === tab.id}
                 aria-controls={`panel-${tab.id}`}
@@ -203,7 +203,7 @@ function DayContent({ date }: { date: string }) {
 
           <section id="panel-rooms" role="tabpanel" aria-labelledby="tab-rooms" hidden={activeTab !== "rooms"} className="mt-4">
             <RoomsPanel day={breakfast} savingIds={savingIds} onCount={changeCount} />
-            {date === todayInUruguay() && <p className="mt-4 text-center text-xs text-slate-400">Las habitaciones se actualizan automáticamente cada 15 segundos.</p>}
+            {date === todayInUruguay() && <p className="mt-3 text-center text-[11px] text-slate-400/80">Actualización automática cada 15 segundos.</p>}
           </section>
 
           <section id="panel-stock" role="tabpanel" aria-labelledby="tab-stock" hidden={activeTab !== "stock"} className="mt-4">

@@ -53,7 +53,7 @@ export function ReceptionPage() {
       <PageHeader eyebrow="Recepción" title="Estadías con desayuno" action={
         <button type="button" onClick={() => setEditing(null)} className="btn-primary"><span aria-hidden className="text-base leading-none">＋</span> Nueva</button>
       } />
-      <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6 sm:py-10">
+      <main className="mx-auto max-w-4xl px-4 py-6 sm:px-6 sm:py-8">
         <div className="mb-7 flex items-baseline justify-between gap-4">
           <div>
             <p className="text-sm font-medium text-pine-800">{capitalize(formatDate(today, "long"))}</p>
@@ -92,10 +92,10 @@ export function ReceptionPage() {
 
             {archived.length > 0 && <section aria-labelledby="archived-title">
               <details className="group">
-                <summary className="flex list-none cursor-pointer items-center gap-3 py-1">
+                <summary className="flex list-none cursor-pointer items-center gap-3 py-0.5">
                   <h2 id="archived-title" className="section-title">Finalizadas y anteriores</h2>
-                  <span className="text-sm text-slate-400">{archived.length}</span>
-                  <span className="ml-auto text-sm text-slate-400 transition-transform group-open:rotate-90" aria-hidden>›</span>
+                  <span className="text-sm font-medium tabular-nums text-slate-400">{archived.length}</span>
+                  <span className="ml-auto grid size-7 place-items-center rounded-full bg-slate-100 text-sm leading-none text-slate-500 transition-transform group-open:rotate-90" aria-hidden>›</span>
                 </summary>
                 <div className="mt-4 space-y-2.5 border-l-2 border-slate-100 pl-4">
                   {archived.map((stay) => (

@@ -31,29 +31,31 @@ function RoomRow({ stay, isFuture, saving, onCount }: {
 }) {
   const complete = stay.servedCount === stay.guestCount;
   return (
-    <article className="flex items-center gap-4 px-4 py-3">
+    <article className="flex items-center gap-3 px-4 py-2.5">
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          <h3 className="truncate text-[15px] font-bold tracking-tight text-pine-950">Habitación {stay.roomNumber}</h3>
+          <h3 className="truncate text-[15px] font-semibold tracking-tight text-pine-900">
+            Habitación <span className="tabular-nums">{stay.roomNumber}</span>
+          </h3>
           {complete
-            ? <span className="rounded bg-pine-50 px-1.5 py-0.5 text-[11px] font-semibold text-pine-700">Completo</span>
-            : <span className="rounded bg-amber-50 px-1.5 py-0.5 text-[11px] font-semibold text-amber-700">Pendiente</span>}
-          {saving && <span className="text-[11px] text-slate-400">Guardando…</span>}
+            ? <span className="shrink-0 rounded-md bg-pine-50 px-1.5 py-0.5 text-[11px] font-semibold text-pine-700">Completo</span>
+            : <span className="shrink-0 rounded-md bg-amber-50 px-1.5 py-0.5 text-[11px] font-semibold text-amber-700">Pendiente</span>}
+          {saving && <span className="shrink-0 text-[11px] text-slate-400">Guardando…</span>}
         </div>
         <p className="mt-0.5 text-xs text-slate-500">Check-out {formatDate(stay.checkOutDate)}</p>
         {stay.breakfastNotes && <ExpandableNote note={stay.breakfastNotes} />}
       </div>
 
       <div className="shrink-0 text-right">
-        <p className="text-lg font-bold leading-none tabular-nums text-pine-950">
-          <span className={complete ? "text-pine-700" : "text-pine-950"}>{stay.servedCount}</span>
-          <span className="mx-0.5 font-normal text-slate-300">/</span>
-          <span className="text-slate-400">{stay.guestCount}</span>
+        <p className="flex items-baseline justify-end leading-none tabular-nums">
+          <span className={`text-[1.35rem] font-bold ${complete ? "text-pine-700" : "text-pine-900"}`}>{stay.servedCount}</span>
+          <span className="mx-1 text-sm font-normal text-slate-300">/</span>
+          <span className="text-[15px] font-semibold text-slate-400">{stay.guestCount}</span>
         </p>
         <p className="mt-1 text-[10px] uppercase tracking-wide text-slate-400">pasajeros</p>
       </div>
 
-      <div className="flex shrink-0 items-center gap-2">
+      <div className="flex shrink-0 items-center gap-1.5">
         <button type="button" disabled={isFuture || stay.servedCount === 0} onClick={() => onCount(stay.stayId, stay.servedCount - 1)} aria-label={`Restar desayuno a habitación ${stay.roomNumber}`} className="counter-button">−</button>
         <button type="button" disabled={isFuture || stay.servedCount === stay.guestCount} onClick={() => onCount(stay.stayId, stay.servedCount + 1)} aria-label={`Sumar desayuno a habitación ${stay.roomNumber}`} className="counter-button counter-button-add">＋</button>
       </div>
@@ -63,7 +65,7 @@ function RoomRow({ stay, isFuture, saving, onCount }: {
 
 function GroupHeading({ label, count }: { label: string; count: number }) {
   return (
-    <div className="flex items-center gap-3 px-4 pb-1 pt-3">
+    <div className="flex items-center gap-3 px-4 pb-0.5 pt-2">
       <h2 className="group-label">{label}</h2>
       <span className="h-px flex-1 bg-slate-100" aria-hidden />
       <span className="text-xs font-medium tabular-nums text-slate-400">{count}</span>
@@ -100,20 +102,22 @@ export function RoomsPanel({ day, savingIds, onCount }: {
 
   return (
     <div className="space-y-3">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+      <div className="flex flex-col gap-2 rounded-xl border border-slate-200 bg-white p-2 sm:flex-row sm:items-center sm:gap-1.5 sm:ps-3.5 focus-within:border-pine-600 focus-within:ring-2 focus-within:ring-pine-600/15">
         <label className="relative block min-w-0 flex-1">
           <span className="sr-only">Buscar habitación</span>
-          <svg aria-hidden className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m21 21-4.3-4.3M17 11a6 6 0 1 1-12 0 6 6 0 0 1 12 0Z" /></svg>
-          <input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar habitación…" className="field pl-9" />
+          <svg aria-hidden className="pointer-events-none absolute left-0.5 top-1/2 size-4 -translate-y-1/2 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m21 21-4.3-4.3M17 11a6 6 0 1 1-12 0 6 6 0 0 1 12 0Z" /></svg>
+          <input type="search" value={query} onChange={(event) => setQuery(event.target.value)}
+            placeholder="Buscar habitación…"
+            className="w-full appearance-none border-0 bg-transparent py-1 pe-1 ps-6 text-[15px] text-pine-950 placeholder:text-slate-400 focus:outline-none" />
         </label>
 
-        <div role="group" aria-label="Filtrar habitaciones" className="flex items-center gap-0.5 rounded-lg border border-slate-200 bg-white p-0.5">
+        <div role="group" aria-label="Filtrar habitaciones" className="flex w-full shrink-0 items-center gap-1 rounded-lg bg-slate-100 p-1 sm:w-auto">
           {FILTERS.map((option) => {
             const count = option.id === "pending" ? pending.length : option.id === "complete" ? complete.length : day.stays.length;
             const active = filter === option.id;
             return (
               <button key={option.id} type="button" onClick={() => setFilter(option.id)} aria-pressed={active}
-                className={`segment-btn ${active ? "segment-btn-active" : ""}`}>
+                className={`segment-btn flex-1 justify-center sm:flex-initial ${active ? "segment-btn-active" : ""}`}>
                 {option.label}
                 <span className="text-xs tabular-nums text-slate-400">{count}</span>
               </button>
@@ -137,7 +141,7 @@ export function RoomsPanel({ day, savingIds, onCount }: {
       ) : pending.length === 0 && complete.length === 0 ? (
         <EmptyState title="No se encontraron habitaciones" detail={`No hay habitaciones que coincidan con "${query.trim()}".`} />
       ) : (
-        <div className="rounded-lg border border-slate-200 bg-white">
+        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
           {filter === "complete" ? (
             <>
               <GroupHeading label="Completas" count={complete.length} />
@@ -170,10 +174,10 @@ export function RoomsPanel({ day, savingIds, onCount }: {
               )}
               {complete.length > 0 && (
                 <details className="group border-t border-slate-100">
-                  <summary className="flex list-none cursor-pointer items-center gap-3 px-4 py-3 transition-colors hover:bg-slate-50">
+                  <summary className="flex list-none cursor-pointer items-center gap-3 px-4 py-2 transition-colors hover:bg-slate-50">
                     <h2 className="group-label">Completas</h2>
                     <span className="text-xs font-medium tabular-nums text-slate-400">{complete.length}</span>
-                    <span className="ml-auto text-sm text-slate-400 transition-transform group-open:rotate-90" aria-hidden>›</span>
+                    <span className="ml-auto grid size-6 place-items-center rounded-full text-sm leading-none text-slate-400 transition-transform group-open:rotate-90" aria-hidden>›</span>
                   </summary>
                   <div className="divide-y divide-slate-100">
                     {complete.map((stay) => (

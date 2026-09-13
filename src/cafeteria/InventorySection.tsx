@@ -66,8 +66,8 @@ export function InventorySection({ date, items, onProductsChanged }: {
   }
 
   return (
-    <section aria-labelledby="stock-title" className="rounded-lg border border-slate-200 bg-white">
-      <div className="flex items-center gap-3 border-b border-slate-100 px-4 py-3.5 sm:px-5">
+    <section aria-labelledby="stock-title" className="rounded-xl border border-slate-200 bg-white">
+      <div className="flex items-center gap-3 border-b border-slate-100 px-4 py-3 sm:px-5">
         <div>
           <h2 id="stock-title" className="text-base font-semibold tracking-tight text-pine-950">Stock diario</h2>
           <p className="mt-0.5 text-xs text-slate-500">Se guarda automáticamente</p>
@@ -90,7 +90,7 @@ export function InventorySection({ date, items, onProductsChanged }: {
         );
       })}</div>
       <details className="border-t border-slate-100">
-        <summary className="cursor-pointer px-4 py-3.5 text-sm font-semibold text-pine-700 transition-colors hover:bg-slate-50 sm:px-5">Administrar productos</summary>
+        <summary className="cursor-pointer px-4 py-3 text-sm font-semibold text-pine-700 transition-colors hover:bg-slate-50 sm:px-5">Administrar productos</summary>
         <div className="border-t border-slate-100 p-4 sm:p-5"><ProductManager onChanged={onProductsChanged} /></div>
       </details>
     </section>
