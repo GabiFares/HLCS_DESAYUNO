@@ -5,7 +5,7 @@ import { PageHeader } from "../components/PageHeader";
 import { api, errorMessage } from "../lib/api";
 import { todayInUruguay } from "../lib/dates";
 import { DailyNote } from "./DailyNote";
-import { DateNavigator } from "./DateNavigator";
+import { DateNavigator } from "../components/DateNavigator";
 import { InventorySection } from "./InventorySection";
 import { RoomsPanel } from "./RoomsPanel";
 

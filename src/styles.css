@@ -78,7 +78,7 @@
   /* ---- Segmento de filtros ---- */
   .segment-btn {
     @apply inline-flex min-h-9 items-center gap-1.5 rounded-md px-2.5 text-sm font-medium text-slate-500
-    transition-colors hover:text-slate-800 sm:px-3;
+    transition-colors hover:text-slate-800 sm:px-3 whitespace-nowrap;
   }
   .segment-btn-active { @apply bg-white font-semibold text-pine-900 shadow-sm; }
 
@@ -99,6 +99,6 @@
   }
 
   /* ---- Utilidades de navegación de fecha ---- */
-  .date-arrow { @apply grid size-10 place-items-center rounded-lg bg-slate-100 text-2xl leading-none text-slate-600 transition-colors hover:bg-slate-200 disabled:opacity-40; }
+  .date-arrow { @apply grid size-9 place-items-center rounded-lg bg-slate-100 text-xl leading-none text-slate-600 transition-colors hover:bg-slate-200 disabled:opacity-40; }
   .mini-button { @apply grid size-9 place-items-center rounded-md border border-slate-200 bg-white text-sm text-slate-600 transition-colors hover:bg-slate-50; }
 }

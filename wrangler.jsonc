@@ -10,8 +10,8 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "hlcs-desayuno",
-      "database_id": "local-development",
+      "database_name": "hlcs-desayuno-production",
+      "database_id": "5adc9817-a137-4f86-83f1-d53389a2d002",
       "migrations_dir": "migrations"
     }
   ]

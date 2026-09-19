@@ -5,8 +5,9 @@ const debuggerUrl = process.env.CHROME_DEBUG_URL ?? "http://127.0.0.1:9222";
 const room = `QA-M-${String(Date.now()).slice(-6)}`;
 
 class CdpPage {
-  constructor(socket) {
+  constructor(socket, targetId) {
     this.socket = socket;
+    this.targetId = targetId;
     this.nextId = 1;
     this.pending = new Map();
     socket.addEventListener("message", (event) => {
@@ -27,7 +28,7 @@ class CdpPage {
       socket.addEventListener("open", resolve, { once: true });
       socket.addEventListener("error", reject, { once: true });
     });
-    const page = new CdpPage(socket);
+    const page = new CdpPage(socket, target.id);
     await page.send("Page.enable");
     await page.send("Runtime.enable");
     await page.waitFor("document.readyState === 'complete'");
@@ -71,7 +72,10 @@ class CdpPage {
     await writeFile(path, Buffer.from(result.data, "base64"));
   }
 
-  close() { this.socket.close(); }
+  async close() {
+    try { await fetch(`${debuggerUrl}/json/close/${this.targetId}`); } catch { /* ignorar */ }
+    this.socket.close();
+  }
 }
 
 function todayInUruguay() {
@@ -126,7 +130,7 @@ try {
     source: "sessionStorage.setItem('hlcs-reloads', String((Number(sessionStorage.getItem('hlcs-reloads')) || 0) + 1));",
   });
 
-  await reception.evaluate(`([...document.querySelectorAll('button')].find((button) => button.textContent.includes('Nueva'))).click()`);
+  await reception.evaluate(`([...document.querySelectorAll('button')].find((button) => button.getAttribute('aria-label') === 'Nueva estadía')).click()`);
   await reception.waitFor("Boolean(document.querySelector('[role=dialog]'))");
   const today = todayInUruguay();
   await setInput(reception, 0, room);
@@ -150,7 +154,7 @@ try {
 
   const clickedEdit = await reception.evaluate(`(() => {
     const article = [...document.querySelectorAll('article')].find((item) => item.innerText.includes(${JSON.stringify(room)}));
-    const button = article ? [...article.querySelectorAll('button')].find((item) => item.textContent.includes('Editar')) : null;
+    const button = article ? [...article.querySelectorAll('button')].find((item) => (item.getAttribute('aria-label') || '').includes('Editar')) : null;
     if (!button) return false;
     button.click();
     return true;
@@ -273,7 +277,7 @@ try {
   await cafeteria.evaluate("document.querySelector('[aria-labelledby=stock-title]').scrollIntoView()");
   await cafeteria.screenshot("/private/tmp/cafeteria-stock-390.png");
   await reception.viewport(390);
-  await reception.evaluate(`([...document.querySelectorAll('button')].find((button) => button.textContent.includes('Nueva'))).click()`);
+  await reception.evaluate(`([...document.querySelectorAll('button')].find((button) => button.getAttribute('aria-label') === 'Nueva estadía')).click()`);
   await reception.waitFor("Boolean(document.querySelector('[role=dialog]'))");
   const dialogFits = await reception.evaluate(`(() => { const rect = document.querySelector('[role=dialog]').getBoundingClientRect(); return rect.left >= 0 && rect.right <= innerWidth && rect.bottom <= innerHeight; })()`);
   if (!dialogFits) throw new Error("El formulario de recepción no cabe en el viewport móvil");
@@ -287,6 +291,6 @@ try {
   if (browserNoteBefore) await fetch(`${appUrl}/api/notes/${browserNoteBefore.date}`, {
     method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ content: browserNoteBefore.content }),
   });
-  reception?.close();
-  cafeteria?.close();
+  await reception?.close();
+  await cafeteria?.close();
 }
