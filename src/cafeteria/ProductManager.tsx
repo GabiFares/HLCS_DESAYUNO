@@ -29,11 +29,12 @@ interface DragGesture {
   timer: number;
 }
 
-function RowMenu({ name, index, total, onMove }: {
+function RowMenu({ name, index, total, onMove, onDelete }: {
   name: string;
   index: number;
   total: number;
   onMove: (index: number, offset: -1 | 1) => void;
+  onDelete: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const root = useRef<HTMLDivElement>(null);
@@ -61,16 +62,22 @@ function RowMenu({ name, index, total, onMove }: {
         className="mini-button">⋯</button>
       {open && (
         <div role="menu" aria-label={`Acciones para ${name}`}
-          className="absolute right-0 top-full z-30 mt-1 w-44 rounded-xl border border-slate-200 bg-white p-1 shadow-lg">
+          className="absolute right-0 top-full z-30 mt-1 w-52 rounded-xl border border-slate-200 bg-white p-1 shadow-lg">
           <button role="menuitem" type="button" disabled={index === 0}
             onClick={() => { setOpen(false); onMove(index, -1); }}
-            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-40">
+            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-40">
             <span aria-hidden className="text-slate-400">↑</span> Mover arriba
           </button>
           <button role="menuitem" type="button" disabled={index === total - 1}
             onClick={() => { setOpen(false); onMove(index, 1); }}
-            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-40">
+            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-40">
             <span aria-hidden className="text-slate-400">↓</span> Mover abajo
+          </button>
+          <div role="separator" aria-orientation="horizontal" className="my-1 h-px bg-slate-100" />
+          <button role="menuitem" type="button" onClick={() => { setOpen(false); onDelete(); }}
+            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-medium text-red-700 hover:bg-red-50">
+            <svg aria-hidden className="size-4 text-red-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14" /></svg>
+            Eliminar…
           </button>
         </div>
       )}
@@ -140,6 +147,13 @@ export function ProductManager({ onChanged }: { onChanged: () => void }) {
       setProducts((current) => current.map((item) => item.id === product.id ? response.product : item));
       onChanged();
     } catch (caught) { setError(errorMessage(caught)); }
+  }
+
+  function confirmDelete(product: Product) {
+    const confirmed = window.confirm(
+      `¿Eliminar «${product.name}»?\n\nSe quitará del registro diario. Su historial se conserva y podés activarlo de nuevo desde esta vista.`,
+    );
+    if (confirmed) void toggle(product);
   }
 
   function beginEdit(product: Product) {
@@ -321,6 +335,10 @@ export function ProductManager({ onChanged }: { onChanged: () => void }) {
   if (loading) return <LoadingBlock label="Cargando productos…" />;
   return (
     <div className="space-y-4">
+      <div>
+        <h2 className="text-base font-semibold tracking-tight text-pine-950">Administrar productos</h2>
+        <p className="section-caption mt-0.5">Configurá qué productos aparecen en el registro diario y en qué orden.</p>
+      </div>
       {error && <ErrorBanner message={error} onDismiss={() => setError("")} />}
       <form onSubmit={add} noValidate className="grid grid-cols-[minmax(0,1fr)_6.5rem_auto] items-start gap-2">
         <FormField label="Nombre del producto" htmlFor="pm-new-name" error={addNameError}>
@@ -382,9 +400,13 @@ export function ProductManager({ onChanged }: { onChanged: () => void }) {
               </div> : (
                 <>
                   <div className="min-w-0 flex-1"><p className="truncate text-sm font-medium text-slate-800">{product.name}</p><p className="text-xs text-slate-400">{product.unit || "Sin unidad"} · {product.active ? "Activo" : "Inactivo"}</p></div>
-                  <RowMenu name={product.name} index={index} total={products.length} onMove={move} />
-                  <button type="button" onClick={() => beginEdit(product)} className="mini-button" aria-label={`Editar ${product.name}`}>✎</button>
-                  <button type="button" onClick={() => void toggle(product)} className="min-h-9 rounded-md px-2 text-xs font-semibold text-pine-700 hover:bg-pine-50">{product.active ? "Ocultar" : "Activar"}</button>
+                  <RowMenu name={product.name} index={index} total={products.length} onMove={move} onDelete={() => confirmDelete(product)} />
+                  <button type="button" onClick={() => beginEdit(product)} className="mini-button" aria-label={`Editar ${product.name}`} title={`Editar ${product.name}`}>✎</button>
+                  <button type="button" onClick={() => void toggle(product)} className="min-h-9 rounded-md px-2 text-xs font-semibold text-pine-700 hover:bg-pine-50"
+                    aria-label={product.active ? `Ocultar ${product.name}` : `Activar ${product.name}`}
+                    title={product.active ? `Ocultar ${product.name}` : `Activar ${product.name}`}>
+                    {product.active ? "Ocultar" : "Activar"}
+                  </button>
                 </>
               )}
             </div>

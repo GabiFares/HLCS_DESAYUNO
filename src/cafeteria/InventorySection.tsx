@@ -8,10 +8,9 @@ type Draft = { received: string; remaining: string };
 const displayQuantity = (value: number | null) => value === null ? "" : String(value);
 const parseQuantity = (value: string): number | null => value.trim() === "" ? null : Number(value.replace(",", "."));
 
-export function InventorySection({ date, items, onProductsChanged }: {
+export function InventorySection({ date, items }: {
   date: string;
   items: InventoryItem[];
-  onProductsChanged: () => void;
 }) {
   const [drafts, setDrafts] = useState<Record<number, Draft>>(() => Object.fromEntries(
     items.map((item) => [item.productId, {
@@ -67,13 +66,13 @@ export function InventorySection({ date, items, onProductsChanged }: {
 
   return (
     <section aria-labelledby="stock-title" className="rounded-xl border border-slate-200 bg-white">
-      <div className="flex items-center gap-3 border-b border-slate-100 px-4 py-3 sm:px-5">
-        <div>
-          <h2 id="stock-title" className="text-base font-semibold tracking-tight text-pine-950">Stock diario</h2>
-          <p className="mt-0.5 text-xs text-slate-500">Se guarda automáticamente</p>
+      <div className="border-b border-slate-100 px-4 py-3 sm:px-5">
+        <div className="flex items-center gap-3">
+          <h2 id="stock-title" className="text-base font-semibold tracking-tight text-pine-950">Registro de stock del día</h2>
+          <span className="h-px flex-1 bg-slate-100" aria-hidden />
+          <span role="status" className={`shrink-0 text-xs font-medium ${saving.size ? "text-slate-400" : "text-pine-700"}`}>{status}</span>
         </div>
-        <span className="h-px flex-1 bg-slate-100" aria-hidden />
-        <span role="status" className={`text-xs font-medium ${saving.size ? "text-slate-400" : "text-pine-700"}`}>{status}</span>
+        <p className="section-caption mt-0.5">Registrá las cantidades del día. Los cambios se guardan automáticamente.</p>
       </div>
       {error && <div className="p-3"><ErrorBanner message={error} onDismiss={() => setError("")} /></div>}
       <div className="grid grid-cols-[minmax(8rem,1fr)_5.5rem_5.5rem] items-end gap-2 border-b border-slate-100 bg-slate-50/70 px-3 py-2 text-[11px] font-medium uppercase tracking-wide text-slate-400 sm:grid-cols-[minmax(12rem,1fr)_8rem_8rem] sm:px-5">
@@ -89,12 +88,6 @@ export function InventorySection({ date, items, onProductsChanged }: {
           </div>
         );
       })}</div>
-      <details className="border-t border-slate-100">
-        <summary className="cursor-pointer px-4 py-3 text-sm font-semibold text-pine-700 transition-colors hover:bg-slate-50 sm:px-5">Administrar productos</summary>
-        <div className="border-t border-slate-100 p-4 sm:p-5"><ProductManager onChanged={onProductsChanged} /></div>
-      </details>
     </section>
   );
 }
-
-import { ProductManager } from "./ProductManager";

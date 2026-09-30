@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" role="img" aria-label="Hotel Los Cedros">
+  <circle cx="24" cy="24" r="24" fill="#2a4435"/>
+  <path fill="#f4f7f4" d="M24 4.5 30 12h-3.6l6.8 9.2H14.8l6.8-9.2H18z"/>
+  <path fill="#e5ece7" d="M15.6 25.5h16.8l-4.4 6.5H20z"/>
+  <path fill="#cbdacc" d="M18.6 34h10.8l-2.2 3.4H20.8z"/>
+  <rect x="22.6" y="37.5" width="2.8" height="6" rx="1.4" fill="#a5c0aa"/>
+</svg>

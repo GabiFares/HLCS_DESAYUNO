@@ -124,7 +124,7 @@ try {
   reception = await CdpPage.open(`${appUrl}/recepcion`);
   cafeteria = await CdpPage.open(`${appUrl}/cafeteria`);
   await reception.waitFor("document.body.innerText.includes('Estadías con desayuno')");
-  await cafeteria.waitFor("document.body.innerText.includes('Servicio de desayuno')");
+  await cafeteria.waitFor("document.body.innerText.toLowerCase().includes('desayunos · cafetería') && document.body.innerText.toLowerCase().includes('hotel los cedros')");
 
   await cafeteria.send("Page.addScriptToEvaluateOnNewDocument", {
     source: "sessionStorage.setItem('hlcs-reloads', String((Number(sessionStorage.getItem('hlcs-reloads')) || 0) + 1));",
@@ -209,7 +209,8 @@ try {
   await new Promise((resolve) => setTimeout(resolve, 1200));
   await cafeteria.send("Page.reload", { ignoreCache: true });
   await new Promise((resolve) => setTimeout(resolve, 800));
-  await cafeteria.waitFor("document.body.innerText.includes('Habitaciones') && document.body.innerText.includes('Stock')", 5000);
+  await cafeteria.waitFor("document.body.innerText.includes('Desayunos por habitación') && document.body.innerText.includes('Control de stock')", 5000);
+  await cafeteria.waitFor(`document.querySelector('input[aria-label*="cantidad ingresada"]')?.value === "6.5"`, 5000);
   const persistedBrowserValues = await cafeteria.evaluate(`({
     inventory: document.querySelector('input[aria-label*="cantidad ingresada"]')?.value,
     note: document.querySelector('textarea')?.value,
@@ -274,6 +275,8 @@ try {
     console.log(`RESPONSIVE ${width}px PASS — recepción ${receptionAudit.scrollWidth}/${receptionAudit.viewport}, cafetería ${cafeteriaAudit.scrollWidth}/${cafeteriaAudit.viewport}, controles pequeños visibles: ${JSON.stringify(small)}`);
   }
   await cafeteria.viewport(390);
+  await cafeteria.evaluate("document.querySelector('#tab-stock').click()");
+  await cafeteria.waitFor("document.querySelector('#panel-stock').hidden === false");
   await cafeteria.evaluate("document.querySelector('[aria-labelledby=stock-title]').scrollIntoView()");
   await cafeteria.screenshot("/private/tmp/cafeteria-stock-390.png");
   await reception.viewport(390);

@@ -181,22 +181,25 @@ async function restoreOrder(ids) {
   });
 }
 
+async function openProductManager(page) {
+  await page.evaluate("document.querySelector('#tab-stock').click()");
+  await page.waitFor("document.querySelector('#tab-stock').getAttribute('aria-selected') === 'true'");
+  const manageButton = await page.evaluate(`([...document.querySelectorAll('button')].find((button) => (button.textContent || '').includes('Administrar productos')))?.textContent || null`);
+  if (!manageButton) throw new Error("El panel de stock no ofrece 'Administrar productos'");
+  await page.evaluate(`([...document.querySelectorAll('button')].find((button) => (button.textContent || '').includes('Administrar productos'))).click()`);
+  await page.waitFor("Boolean(document.querySelector('[data-product-id]'))", 8000);
+}
+
 let page;
 let originalIds = [];
 try {
   page = await CdpPage.open(`${appUrl}/cafeteria`);
-  await page.waitFor("document.body.innerText.includes('Servicio de desayuno')", 10000);
+  await page.waitFor("document.body.innerText.includes('Desayunos · Cafetería')", 10000);
 
   originalIds = await apiOrder();
   if (originalIds.length < 4) throw new Error(`Se necesitan al menos 4 productos para probar; hay ${originalIds.length}`);
 
-  await page.evaluate("document.querySelector('#tab-stock').click()");
-  await page.waitFor("document.querySelector('#tab-stock').getAttribute('aria-selected') === 'true'");
-  await page.evaluate(`(() => {
-    const details = [...document.querySelectorAll('details')].find((item) => item.innerText.includes('Administrar productos'));
-    if (details) details.open = true;
-  })()`);
-  await page.waitFor("Boolean(document.querySelector('[data-product-id]'))", 8000);
+  await openProductManager(page);
 
   await page.viewport(1280, 1200);
   const fullHeight = await page.evaluate("document.documentElement.scrollHeight");
@@ -236,14 +239,8 @@ try {
 
   await page.send("Page.reload", { ignoreCache: true });
   await sleep(800);
-  await page.waitFor("document.body.innerText.includes('Servicio de desayuno')", 8000);
-  await page.evaluate("document.querySelector('#tab-stock').click()");
-  await page.waitFor("document.querySelector('#tab-stock').getAttribute('aria-selected') === 'true'");
-  await page.evaluate(`(() => {
-    const details = [...document.querySelectorAll('details')].find((item) => item.innerText.includes('Administrar productos'));
-    if (details) details.open = true;
-  })()`);
-  await page.waitFor("Boolean(document.querySelector('[data-product-id]'))", 8000);
+  await page.waitFor("document.body.innerText.includes('Desayunos · Cafetería')", 8000);
+  await openProductManager(page);
   await sleep(300);
   await expectOrder(page, expectedMiddle, "persistencia tras recarga");
   console.log("DND RELOAD PASS — el nuevo orden sobrevive a una recarga real de la página (DOM y API)");

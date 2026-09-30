@@ -82,6 +82,13 @@
   }
   .segment-btn-active { @apply bg-white font-semibold text-pine-900 shadow-sm; }
 
+  /* ---- Pestañas de sección (tablist / sub-vistas) ---- */
+  .seg-pill {
+    @apply inline-flex min-h-11 items-center justify-center gap-1.5 rounded-lg px-1.5 text-[13px] font-medium leading-tight
+    text-slate-600 transition-colors hover:text-pine-900;
+  }
+  .seg-pill-active { @apply bg-white font-semibold text-pine-900 shadow-sm; }
+
   /* ---- Etiqueta de grupo ---- */
   .group-label { @apply text-[11px] font-semibold uppercase tracking-wide text-slate-400; }
 

@@ -1,28 +1,43 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { BreakfastDay, InventoryDay } from "../../shared/types";
 import { ErrorBanner, LoadingBlock } from "../components/Feedback";
-import { PageHeader } from "../components/PageHeader";
+import { HotelLogo } from "../components/HotelLogo";
+import { DateNavigator } from "../components/DateNavigator";
 import { api, errorMessage } from "../lib/api";
 import { todayInUruguay } from "../lib/dates";
 import { DailyNote } from "./DailyNote";
-import { DateNavigator } from "../components/DateNavigator";
 import { InventorySection } from "./InventorySection";
+import { ProductManager } from "./ProductManager";
 import { RoomsPanel } from "./RoomsPanel";
 
 type TabId = "rooms" | "stock" | "note";
+type StockView = "daily" | "manage";
 
 const TABS: { id: TabId; label: string }[] = [
-  { id: "rooms", label: "Habitaciones" },
-  { id: "stock", label: "Stock" },
-  { id: "note", label: "Nota del día" },
+  { id: "rooms", label: "Desayunos por habitación" },
+  { id: "stock", label: "Control de stock" },
+  { id: "note", label: "Notas del desayuno" },
+];
+
+const STOCK_VIEWS: { id: StockView; label: string }[] = [
+  { id: "daily", label: "Registro diario" },
+  { id: "manage", label: "Administrar productos" },
 ];
 
 export function CafeteriaPage() {
   const [date, setDate] = useState(todayInUruguay());
   return (
     <div className="min-h-dvh bg-[#f7f8f7]">
-      <PageHeader eyebrow="Cafetería" title="Servicio de desayuno" />
-      <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8">
+      <header className="border-b-2 border-b-pine-800 bg-white">
+        <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3.5 sm:px-6 sm:py-4">
+          <HotelLogo />
+          <div className="min-w-0 flex-1">
+            <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-pine-700">Hotel Los Cedros</p>
+            <h1 className="page-title mt-0.5 truncate">Desayunos · Cafetería</h1>
+          </div>
+        </div>
+      </header>
+      <main className="mx-auto max-w-6xl px-4 py-5 sm:px-6 sm:py-7">
         <DateNavigator date={date} onChange={setDate} />
         <DayContent key={date} date={date} />
       </main>
@@ -31,30 +46,48 @@ export function CafeteriaPage() {
 }
 
 function DaySummary({ day }: { day: BreakfastDay }) {
-  const pending = day.stays.filter((stay) => stay.servedCount < stay.guestCount).length;
+  const stays = day.stays;
+  const registered = stays.filter((stay) => stay.servedCount === stay.guestCount).length;
+  const unregistered = stays.filter((stay) => stay.servedCount === 0).length;
+  const pending = stays.length - registered;
+
+  let statusText: string;
+  let tone: "neutral" | "warn" | "done";
+  if (stays.length === 0) {
+    statusText = "No hay habitaciones para este día";
+    tone = "neutral";
+  } else if (pending === 0) {
+    statusText = "Registro del desayuno completo";
+    tone = "done";
+  } else if (pending === 1) {
+    statusText = "Queda 1 habitación por registrar";
+    tone = "warn";
+  } else {
+    statusText = `Quedan ${pending} habitaciones por registrar`;
+    tone = "warn";
+  }
+
+  const footerStyle = tone === "warn" ? "bg-amber-50 text-amber-800"
+    : tone === "done" ? "bg-pine-50 text-pine-800"
+      : "bg-slate-50 text-slate-600";
+
   return (
-    <div aria-live="polite" className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border-t-2 border-pine-700 bg-slate-200 sm:grid-cols-4">
-      <div className="flex flex-col items-center gap-0.5 bg-white px-3 py-2.5">
-        <p className="stat-label">Habitaciones</p>
-        <p className="stat-value">{day.stays.length}</p>
+    <div aria-live="polite" className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+      <div className="grid grid-cols-3 divide-x divide-slate-100">
+        <div className="flex flex-col items-center gap-0.5 px-3 py-3">
+          <p className="stat-label">Habitaciones de hoy</p>
+          <p className="stat-value">{stays.length}</p>
+        </div>
+        <div className="flex flex-col items-center gap-0.5 px-3 py-3">
+          <p className="stat-label">Sin registrar</p>
+          <p className={`stat-value ${unregistered === 0 ? "text-pine-700" : "text-amber-700"}`}>{unregistered}</p>
+        </div>
+        <div className="flex flex-col items-center gap-0.5 px-3 py-3">
+          <p className="stat-label">Atendidas</p>
+          <p className="stat-value">{registered}</p>
+        </div>
       </div>
-      <div className="flex flex-col items-center gap-0.5 bg-white px-3 py-2.5">
-        <p className="stat-label">Pendientes</p>
-        <p className={`stat-value ${pending === 0 ? "text-pine-700" : "text-amber-700"}`}>{pending}</p>
-      </div>
-      <div className="flex flex-col items-center gap-0.5 bg-white px-3 py-2.5">
-        <p className="stat-label">Servidos</p>
-        <p className="stat-value">{day.totalServed}</p>
-      </div>
-      <div className="flex flex-col items-center justify-center gap-0.5 bg-white px-3 py-2.5">
-        <span className="flex items-center gap-1.5">
-          <span aria-hidden className={`size-2 rounded-full ${day.canClose ? "bg-pine-600" : "bg-amber-500"}`} />
-          <span className="stat-label">Estado</span>
-        </span>
-        <p className={`text-[13px] font-semibold leading-tight ${day.canClose ? "text-pine-800" : "text-amber-800"}`}>
-          {day.canClose ? "Puede cerrar" : "Faltan pendientes"}
-        </p>
-      </div>
+      <p className={`px-4 py-2.5 text-center text-[13px] font-semibold ${footerStyle}`}>{statusText}</p>
     </div>
   );
 }
@@ -67,6 +100,7 @@ function DayContent({ date }: { date: string }) {
   const [error, setError] = useState("");
   const [savingIds, setSavingIds] = useState<Set<number>>(new Set());
   const [activeTab, setActiveTab] = useState<TabId>("rooms");
+  const [stockView, setStockView] = useState<StockView>("daily");
   const breakfastRef = useRef<BreakfastDay | null>(null);
   const saveTimers = useRef(new Map<number, ReturnType<typeof setTimeout>>());
   const saveChains = useRef(new Map<number, Promise<void>>());
@@ -187,18 +221,20 @@ function DayContent({ date }: { date: string }) {
         <>
           <DaySummary day={breakfast} />
 
-          <nav role="tablist" aria-label="Secciones del día" className="mt-5 flex items-end gap-1 overflow-x-auto border-b border-slate-200">
-            {TABS.map((tab) => (
-              <button key={tab.id} type="button" id={`tab-${tab.id}`} role="tab" aria-selected={activeTab === tab.id}
-                aria-controls={`panel-${tab.id}`}
-                onClick={() => setActiveTab(tab.id)}
-                className={`tab ${activeTab === tab.id ? "tab-active" : ""}`}>
-                {tab.label}
-                {tab.id === "rooms" && breakfast.stays.length > 0 && (
-                  <span className="text-xs tabular-nums text-slate-400">{breakfast.stays.length}</span>
-                )}
-              </button>
-            ))}
+          <nav role="tablist" aria-label="Secciones del día" className="mt-5">
+            <div className="grid grid-cols-3 gap-1 rounded-xl bg-slate-100 p-1">
+              {TABS.map((tab) => (
+                <button key={tab.id} type="button" id={`tab-${tab.id}`} role="tab"
+                  aria-selected={activeTab === tab.id} aria-controls={`panel-${tab.id}`}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`seg-pill ${activeTab === tab.id ? "seg-pill-active" : ""}`}>
+                  {tab.label}
+                  {tab.id === "rooms" && breakfast.stays.length > 0 && (
+                    <span className="text-xs tabular-nums text-slate-400">{breakfast.stays.length}</span>
+                  )}
+                </button>
+              ))}
+            </div>
           </nav>
 
           <section id="panel-rooms" role="tabpanel" aria-labelledby="tab-rooms" hidden={activeTab !== "rooms"} className="mt-4">
@@ -207,7 +243,22 @@ function DayContent({ date }: { date: string }) {
           </section>
 
           <section id="panel-stock" role="tabpanel" aria-labelledby="tab-stock" hidden={activeTab !== "stock"} className="mt-4">
-            <InventorySection key={date} date={date} items={inventory.items} onProductsChanged={() => void refreshInventory()} />
+            <div role="group" aria-label="Sección de control de stock" className="flex gap-1 rounded-lg bg-slate-100 p-1">
+              {STOCK_VIEWS.map((option) => {
+                const active = stockView === option.id;
+                return (
+                  <button key={option.id} type="button" onClick={() => setStockView(option.id)} aria-pressed={active}
+                    className={`seg-pill min-h-10 flex-1 sm:flex-initial ${active ? "seg-pill-active" : ""}`}>
+                    {option.label}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="mt-3">
+              {stockView === "daily"
+                ? <InventorySection key={date} date={date} items={inventory.items} />
+                : <ProductManager onChanged={() => void refreshInventory()} />}
+            </div>
           </section>
 
           <section id="panel-note" role="tabpanel" aria-labelledby="tab-note" hidden={activeTab !== "note"} className="mt-4">
