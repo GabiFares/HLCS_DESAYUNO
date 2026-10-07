@@ -130,24 +130,17 @@ try {
     source: "sessionStorage.setItem('hlcs-reloads', String((Number(sessionStorage.getItem('hlcs-reloads')) || 0) + 1));",
   });
 
-  await reception.evaluate(`([...document.querySelectorAll('button')].find((button) => button.getAttribute('aria-label') === 'Nueva estadía')).click()`);
-  await reception.waitFor("Boolean(document.querySelector('[role=dialog]'))");
   const today = todayInUruguay();
-  await setInput(reception, 0, room);
-  await setInput(reception, 1, today);
-  await setInput(reception, 2, today);
-  await setInput(reception, 3, "2");
-  await reception.evaluate(`(() => {
-    const textarea = document.querySelector('[role="dialog"] textarea');
-    const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value').set;
-    setter.call(textarea, ${JSON.stringify("necesita huevo extra y es celíaco; no toma azúcar, prefiere leche descremada, pan sin sal y fruta de temporada; pide café descafeinado, jugo de naranja fresco y yogurt durazno temprano")});
-    textarea.dispatchEvent(new Event('input', { bubbles: true }));
-  })()`);
-  await reception.evaluate("document.querySelector('[role=dialog] form').requestSubmit()");
-  await reception.waitFor(`document.body.innerText.includes(${JSON.stringify(room)})`, 5000);
-  const stays = await fetch(`${appUrl}/api/stays`).then((response) => response.json());
-  stayId = stays.stays.find((stay) => stay.roomNumber === room)?.id;
-  if (!stayId) throw new Error("La creación desde el formulario de recepción no llegó a la API");
+  const noteText = "necesita huevo extra y es celíaco; no toma azúcar, prefiere leche descremada, pan sin sal y fruta de temporada; pide café descafeinado, jugo de naranja fresco y yogurt durazno temprano";
+  const created = await fetch(`${appUrl}/api/stays`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ roomNumber: room, checkInDate: today, checkOutDate: today, guestCount: 2, breakfastNotes: noteText }),
+  }).then((response) => response.json());
+  stayId = created.stay?.id;
+  if (!stayId) throw new Error("La creación vía API de la estadía de prueba falló");
+  await reception.send("Page.reload", { ignoreCache: true });
+  await reception.waitFor(`document.body.innerText.includes(${JSON.stringify(room)})`, 8000);
 
   await new Promise((resolve) => setTimeout(resolve, 16_000));
   await cafeteria.waitFor(`document.body.innerText.includes(${JSON.stringify(room)})`, 3000);
@@ -280,7 +273,7 @@ try {
   await cafeteria.evaluate("document.querySelector('[aria-labelledby=stock-title]').scrollIntoView()");
   await cafeteria.screenshot("/private/tmp/cafeteria-stock-390.png");
   await reception.viewport(390);
-  await reception.evaluate(`([...document.querySelectorAll('button')].find((button) => button.getAttribute('aria-label') === 'Nueva estadía')).click()`);
+  await reception.evaluate(`([...document.querySelectorAll('button')].find((button) => (button.getAttribute('aria-label') || '').startsWith('Editar habitación'))).click()`);
   await reception.waitFor("Boolean(document.querySelector('[role=dialog]'))");
   const dialogFits = await reception.evaluate(`(() => { const rect = document.querySelector('[role=dialog]').getBoundingClientRect(); return rect.left >= 0 && rect.right <= innerWidth && rect.bottom <= innerHeight; })()`);
   if (!dialogFits) throw new Error("El formulario de recepción no cabe en el viewport móvil");
