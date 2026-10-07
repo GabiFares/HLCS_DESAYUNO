@@ -235,7 +235,7 @@ try {
     rooms: document.querySelector('#tab-rooms').getAttribute('aria-selected'),
     stockVisible: document.querySelector('#panel-stock').hidden === false,
     roomsVisible: document.querySelector('#panel-rooms').hidden === false,
-    date: document.querySelector('input[type=date]').value,
+    date: document.querySelector('[data-date]')?.getAttribute('data-date'),
     search: document.querySelector('input[type=search]').value,
   }))()`);
   await new Promise((resolve) => setTimeout(resolve, 17_000));
@@ -244,7 +244,7 @@ try {
     rooms: document.querySelector('#tab-rooms').getAttribute('aria-selected'),
     stockVisible: document.querySelector('#panel-stock').hidden === false,
     roomsVisible: document.querySelector('#panel-rooms').hidden === false,
-    date: document.querySelector('input[type=date]').value,
+    date: document.querySelector('[data-date]')?.getAttribute('data-date'),
     search: document.querySelector('input[type=search]').value,
   }))()`);
   const loadsAtCheckEnd = (await cafeteria.evaluate("Number(sessionStorage.getItem('hlcs-reloads')) || 0"));

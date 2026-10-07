@@ -5,6 +5,7 @@ import { EmptyState, ErrorBanner, LoadingBlock } from "../components/Feedback";
 import { PageHeader } from "../components/PageHeader";
 import { api, errorMessage } from "../lib/api";
 import { todayInUruguay } from "../lib/dates";
+import { ImportModal } from "./ImportModal";
 import { StayCard } from "./StayCard";
 import { StayForm } from "./StayForm";
 
@@ -73,6 +74,7 @@ export function ReceptionPage() {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
   const [editing, setEditing] = useState<Stay | null | undefined>(undefined);
+  const [importOpen, setImportOpen] = useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -125,10 +127,10 @@ export function ReceptionPage() {
 
   const emptyState = filter === "all"
     ? (stays.length === 0
-      ? <EmptyState title="No hay estadías para esta fecha" detail="Creá una estadía con el botón Nueva." />
+      ? <EmptyState title="No hay estadías para esta fecha" detail="Importá un PDF de Desbravador para cargar las reservas." />
       : <EmptyState title="No se encontraron habitaciones" detail={`No hay habitaciones que coincidan con "${query.trim()}".`} />)
     : filter === "staying"
-      ? <EmptyState title="No hay habitaciones alojadas" detail="Creá una estadía con el botón Nueva o cambiá de fecha." />
+      ? <EmptyState title="No hay habitaciones alojadas" detail="Importá un PDF o cambiá de fecha." />
       : filter === "upcoming"
         ? <EmptyState title="No hay próximas llegadas" detail="Las reservas futuras aparecen en esta vista." />
         : <EmptyState title="No hay estadías finalizadas" detail="Las estadías completadas aparecen en esta vista." />;
@@ -155,10 +157,9 @@ export function ReceptionPage() {
   return (
     <div className="min-h-dvh bg-[#f7f8f7]">
       <PageHeader eyebrow="Recepción" title="Estadías con desayuno" action={
-        <button type="button" onClick={() => setEditing(null)} aria-label="Nueva estadía" title="Nueva estadía"
-          className="grid size-11 place-items-center rounded-lg bg-pine-800 text-2xl leading-none text-white transition-colors hover:bg-pine-900">
-          <span aria-hidden className="-translate-y-px">＋</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <button type="button" onClick={() => setImportOpen(true)} className="inline-flex h-11 items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 text-sm font-medium text-pine-900 shadow-sm transition-colors hover:bg-slate-50">Importar reservas</button>
+        </div>
       } />
       <main className="mx-auto max-w-4xl px-4 py-6 sm:px-6 sm:py-8">
         <DateNavigator date={date} onChange={setDate} allowFuture />
@@ -199,7 +200,12 @@ export function ReceptionPage() {
           </div>
         )}
       </main>
-      {editing !== undefined && <StayForm stay={editing} onClose={() => setEditing(undefined)} onSaved={upsert} onDeleted={(id) => { setStays((all) => all.filter((stay) => stay.id !== id)); setEditing(undefined); }} />}
+      {editing !== undefined && <StayForm stay={editing} onClose={() => setEditing(undefined)} onSaved={upsert} onDeleted={(id: number) => { setStays((all) => all.filter((stay) => stay.id !== id)); setEditing(undefined); }} />}
+      <ImportModal open={importOpen} onClose={() => setImportOpen(false)} onApplied={() => {
+        setImportOpen(false);
+        setLoading(true);
+        api.listStays().then((response) => { setStays(response.stays); setError(""); }).catch((caught: unknown) => { setError(errorMessage(caught)); }).finally(() => setLoading(false));
+      }} />
     </div>
   );
 }

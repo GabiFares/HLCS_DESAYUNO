@@ -1,3 +1,4 @@
+import type { ImportPreview, ImportResult } from "../../shared/desbravador/types";
 import type { BreakfastDay, InventoryDay, Product, Stay } from "../../shared/types";
 
 export class ApiError extends Error {
@@ -7,9 +8,13 @@ export class ApiError extends Error {
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const hasForm = typeof init?.body !== "string" && init?.body instanceof FormData;
+  const headers = hasForm
+    ? (init?.headers ?? undefined)
+    : (init?.body ? { "content-type": "application/json", ...init.headers } : init?.headers);
   const response = await fetch(path, {
     ...init,
-    headers: init?.body ? { "content-type": "application/json", ...init.headers } : init?.headers,
+    headers,
   });
   if (!response.ok) {
     let message = "No se pudo completar la operación.";
@@ -57,6 +62,16 @@ export const api = {
   reorderProducts: (productIds: number[]) => request<void>("/api/products/order", {
     method: "PUT", body: JSON.stringify({ productIds }),
   }),
+  previewDesbravador: (file: File) => {
+    const form = new FormData();
+    form.append("file", file);
+    return request<ImportPreview>("/api/import/desbravador/preview", { method: "POST", body: form });
+  },
+  applyDesbravador: (file: File) => {
+    const form = new FormData();
+    form.append("file", file);
+    return request<ImportResult>("/api/import/desbravador/apply", { method: "POST", body: form });
+  },
 };
 
 export function errorMessage(error: unknown): string {
