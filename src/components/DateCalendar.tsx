@@ -48,7 +48,7 @@ function initView(value: string): View {
 }
 
 function dayClasses(cell: Cell, selected: boolean, today: string, disabled: boolean): string {
-  const base = "grid h-11 w-11 place-items-center rounded-lg text-sm tabular-nums transition-colors "
+  const base = "grid h-11 w-full min-w-0 place-items-center rounded-lg text-sm tabular-nums transition-colors "
     + "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pine-600 focus-visible:ring-offset-1";
   if (disabled) return `${base} cursor-not-allowed text-slate-300`;
   if (selected) return `${base} bg-pine-800 font-semibold text-white hover:bg-pine-900`;
@@ -115,7 +115,7 @@ export function DateCalendar({ value, today, allowFuture = false, onSelect, onCl
 
   if (mode === "months") {
     return (
-      <div className="w-[19rem] max-w-[calc(100vw-2rem)] select-none">
+      <div className="w-full min-w-0 select-none sm:w-[19rem]">
         <div className="flex items-center justify-between gap-1 px-1 pb-2">
           <button type="button" aria-label="Volver al calendario" onClick={() => setMode("days")} className="mini-button">‹</button>
           <span className="text-sm font-semibold text-pine-950">Elegir mes</span>
@@ -153,33 +153,33 @@ export function DateCalendar({ value, today, allowFuture = false, onSelect, onCl
   }
 
   return (
-    <div className="w-[19rem] max-w-[calc(100vw-2rem)] select-none">
+    <div className="w-full min-w-0 select-none sm:w-[19rem]">
       <div className="flex items-center justify-between gap-1 px-1 pb-2">
         <button type="button" aria-label="Mes anterior" onClick={() => moveMonth(-1)} className="mini-button">‹</button>
         <button
           type="button"
           aria-haspopup="true"
           onClick={() => setMode("months")}
-          className="rounded-lg px-3 py-1.5 text-sm font-semibold text-pine-950 transition-colors hover:bg-slate-100"
+          className="min-h-11 rounded-lg px-3 text-sm font-semibold text-pine-950 transition-colors hover:bg-slate-100"
         >
           {monthYearLabel(view.year, view.month)}
         </button>
         <button type="button" aria-label="Mes siguiente" disabled={monthAtLimit} onClick={() => moveMonth(1)} className="mini-button">›</button>
       </div>
 
-      <div role="grid" aria-label="Calendario" onKeyDown={handleKeyDown} className="px-1">
+      <div role="grid" aria-label="Calendario" onKeyDown={handleKeyDown}>
         <div role="row" className="grid grid-cols-7 pb-1">
           {WEEKDAY_INITIALS.map((label) => (
             <div key={label} role="columnheader" className="grid h-8 place-items-center text-[11px] font-semibold uppercase tracking-wide text-slate-400">{label}</div>
           ))}
         </div>
         {rows.map((week) => (
-          <div role="row" key={week[0]?.iso ?? "row"} className="grid grid-cols-7 gap-0.5">
+          <div role="row" key={week[0]?.iso ?? "row"} className="grid min-w-0 grid-cols-7 gap-0.5">
             {week.map((cell) => {
               const disabled = isDisabled(cell.iso);
               const selected = cell.iso === value;
               return (
-                <div role="gridcell" aria-selected={selected} key={cell.iso} className="flex justify-center">
+                <div role="gridcell" aria-selected={selected} key={cell.iso} className="flex min-w-0 justify-center">
                   <button
                     type="button"
                     ref={(element) => {
@@ -202,8 +202,8 @@ export function DateCalendar({ value, today, allowFuture = false, onSelect, onCl
         ))}
       </div>
       <div className="mt-2 flex items-center justify-between border-t border-slate-100 px-2 pt-2">
-        <button type="button" onClick={() => onSelect(today)} className="rounded-lg px-2 py-1 text-sm font-semibold text-pine-700 transition-colors hover:bg-pine-50">Hoy</button>
-        <button type="button" onClick={onClose} className="rounded-lg px-2 py-1 text-sm font-medium text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-800">Cerrar</button>
+        <button type="button" onClick={() => onSelect(today)} className="min-h-11 rounded-lg px-3 text-sm font-semibold text-pine-700 transition-colors hover:bg-pine-50">Hoy</button>
+        <button type="button" onClick={onClose} className="min-h-11 rounded-lg px-3 text-sm font-medium text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-800">Cerrar</button>
       </div>
     </div>
   );

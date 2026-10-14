@@ -261,7 +261,7 @@ try {
   }
   console.log("N PASS — un refresh automático mantiene la pestaña activa, la fecha y la búsqueda sin recargar la página");
 
-  for (const width of [390, 768, 1280]) {
+  for (const width of [320, 375, 390, 768, 1280]) {
     const receptionAudit = await audit(reception, "recepcion", width);
     const cafeteriaAudit = await audit(cafeteria, "cafeteria", width);
     const small = [...receptionAudit.tooSmall, ...cafeteriaAudit.tooSmall];

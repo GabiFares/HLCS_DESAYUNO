@@ -21,7 +21,7 @@ export function ExpandableNote({ note, className = "" }: { note: string; classNa
       <span ref={textRef} className={`min-w-0 flex-1 whitespace-pre-line ${expanded ? "" : "line-clamp-2"}`}>{note}</span>
       {clamped && (
         <button type="button" onClick={() => setExpanded((value) => !value)} aria-expanded={expanded}
-          className="shrink-0 rounded py-0.5 text-[12px] font-semibold text-pine-700 hover:text-pine-900 hover:underline">
+          className="min-h-11 shrink-0 rounded px-1 text-[13px] font-semibold text-pine-700 hover:text-pine-900 hover:underline">
           {expanded ? "Ver menos" : "Ver más"}
         </button>
       )}

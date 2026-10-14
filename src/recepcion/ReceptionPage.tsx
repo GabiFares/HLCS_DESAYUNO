@@ -173,7 +173,7 @@ export function ReceptionPage() {
                 <svg aria-hidden className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m21 21-4.3-4.3M17 11a6 6 0 1 1-12 0 6 6 0 0 1 12 0Z" /></svg>
                 <input type="search" value={query} onChange={(event) => setQuery(event.target.value)}
                   placeholder="Buscar habitación…"
-                  className="h-10 w-full rounded-lg border border-slate-200 bg-white ps-9 pe-3 text-[15px] text-pine-950 placeholder:text-slate-400 focus:border-pine-600 focus:ring-2 focus:ring-pine-600/15 focus:outline-none" />
+                  className="h-11 w-full rounded-lg border border-slate-200 bg-white ps-9 pe-3 text-[15px] text-pine-950 placeholder:text-slate-400 focus:border-pine-600 focus:ring-2 focus:ring-pine-600/15 focus:outline-none" />
               </label>
 
               <div role="group" aria-label="Filtrar estadías" className="flex flex-wrap gap-1">
@@ -181,7 +181,7 @@ export function ReceptionPage() {
                   const active = filter === option.id;
                   return (
                     <button key={option.id} type="button" onClick={() => setFilter(option.id)} aria-pressed={active}
-                      className={`flex items-center justify-center gap-1 whitespace-nowrap rounded-full px-1.5 py-1.5 text-[13px] font-medium transition-colors ${active ? "bg-pine-800 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900"}`}>
+                      className={`flex min-h-11 items-center justify-center gap-1 whitespace-nowrap rounded-full px-3 py-2 text-[13px] font-medium transition-colors ${active ? "bg-pine-800 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900"}`}>
                       {option.label}
                       <span className={`text-xs tabular-nums ${active ? "text-pine-200" : "text-slate-400"}`}>{countFor(option.id)}</span>
                     </button>
@@ -201,10 +201,17 @@ export function ReceptionPage() {
         )}
       </main>
       {editing !== undefined && <StayForm stay={editing} onClose={() => setEditing(undefined)} onSaved={upsert} onDeleted={(id: number) => { setStays((all) => all.filter((stay) => stay.id !== id)); setEditing(undefined); }} />}
-      <ImportModal open={importOpen} onClose={() => setImportOpen(false)} onApplied={() => {
-        setImportOpen(false);
+      <ImportModal open={importOpen} onClose={() => setImportOpen(false)} onApplied={async () => {
         setLoading(true);
-        api.listStays().then((response) => { setStays(response.stays); setError(""); }).catch((caught: unknown) => { setError(errorMessage(caught)); }).finally(() => setLoading(false));
+        try {
+          const response = await api.listStays();
+          setStays(response.stays);
+          setError("");
+        } catch (caught) {
+          setError(errorMessage(caught));
+        } finally {
+          setLoading(false);
+        }
       }} />
     </div>
   );

@@ -55,7 +55,7 @@ export function DateNavigator({ date, onChange, allowFuture = false }: {
   }
 
   return (
-    <div ref={rootRef} className="relative">
+    <div ref={rootRef} className="relative mb-4">
       <div className="flex items-center gap-1">
         <button type="button" onClick={() => onChange(shiftCalendarDate(date, -1))} aria-label="Día anterior" title="Día anterior" className="date-arrow">‹</button>
         <button
@@ -65,7 +65,7 @@ export function DateNavigator({ date, onChange, allowFuture = false }: {
           aria-expanded={open}
           aria-label={`Elegir fecha: ${full}`}
           onClick={() => setOpen((current) => !current)}
-          className="flex min-h-10 flex-1 items-center justify-center gap-2 rounded-lg px-2 text-sm font-semibold text-pine-950 transition-colors hover:bg-slate-100 focus-visible:bg-slate-100"
+          className="flex min-h-11 min-w-0 flex-1 items-center justify-center gap-2 rounded-lg px-2 text-sm font-semibold text-pine-950 transition-colors hover:bg-slate-100 focus-visible:bg-slate-100"
         >
           <CalendarIcon />
           <span className="truncate">{full}</span>
@@ -87,7 +87,7 @@ export function DateNavigator({ date, onChange, allowFuture = false }: {
           onMouseDown={(event) => { if (event.target === event.currentTarget) setOpen(false); }}
           className="fixed inset-x-0 top-0 z-50 flex h-dvh items-end justify-center bg-pine-950/40 backdrop-blur-[2px]"
         >
-          <div className="max-h-[calc(100dvh-1.5rem)] w-full max-w-sm overflow-y-auto overscroll-contain rounded-t-3xl border border-slate-200 bg-white px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-2 shadow-2xl shadow-pine-950/20">
+          <div className="max-h-[calc(100dvh-1rem)] w-full max-w-sm overflow-y-auto overscroll-contain rounded-t-3xl border border-slate-200 bg-white px-2 pb-[max(1rem,env(safe-area-inset-bottom))] pt-2 shadow-2xl shadow-pine-950/20 sm:px-4">
             <div className="mx-auto mb-2 h-1.5 w-10 rounded-full bg-slate-200" aria-hidden="true" />
             <DateCalendar value={date} today={today} allowFuture={allowFuture} onSelect={select} onClose={() => setOpen(false)} />
           </div>

@@ -147,7 +147,7 @@ export function RoomsPanel({ day, savingIds, onCount }: {
           <svg aria-hidden className="pointer-events-none absolute left-0.5 top-1/2 size-4 -translate-y-1/2 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m21 21-4.3-4.3M17 11a6 6 0 1 1-12 0 6 6 0 0 1 12 0Z" /></svg>
           <input type="search" value={query} onChange={(event) => setQuery(event.target.value)}
             placeholder="Buscar habitación…"
-            className="w-full appearance-none border-0 bg-transparent py-1 pe-1 ps-6 text-[15px] text-pine-950 placeholder:text-slate-400 focus:outline-none" />
+            className="min-h-11 w-full appearance-none border-0 bg-transparent pe-1 ps-6 text-[15px] text-pine-950 placeholder:text-slate-400 focus:outline-none" />
         </label>
 
         <div role="group" aria-label="Filtrar habitaciones" className="flex w-full flex-wrap items-center gap-1 rounded-lg bg-slate-100 p-1 sm:w-auto">

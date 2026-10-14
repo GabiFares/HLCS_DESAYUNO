@@ -14,6 +14,7 @@
     "db:migrate:remote": "wrangler d1 migrations apply hlcs-desayuno --remote",
     "test:e2e:local": "node scripts/verify-local.mjs",
     "test:browser:local": "node scripts/verify-browser.mjs",
+    "test:ui-p0:local": "node scripts/verify-ui-p0.mjs",
     "test:dnd:local": "node scripts/verify-dnd.mjs",
     "deploy": "npm run build && wrangler deploy"
   },

@@ -32,7 +32,7 @@
 }
 
 @utility btn {
-  @apply inline-flex min-h-10 items-center justify-center gap-2 rounded-lg px-4 text-sm font-semibold transition-colors duration-150;
+  @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 text-sm font-semibold transition-colors duration-150;
 }
 
 @layer components {
@@ -50,7 +50,7 @@
   /* ---- Campos ---- */
   .field-label { @apply mb-1.5 block text-[13px] font-medium text-slate-700; }
   .field {
-    @apply min-h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-[15px] text-pine-950 shadow-none
+    @apply min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-[15px] text-pine-950 shadow-none
     placeholder:text-slate-400 focus:border-pine-600 focus:ring-2 focus:ring-pine-600/20 focus:outline-none transition-colors;
   }
   .field-invalid { @apply border-red-400 bg-red-50/30 focus:border-red-500 focus:ring-red-500/15; }
@@ -77,7 +77,7 @@
 
   /* ---- Segmento de filtros ---- */
   .segment-btn {
-    @apply inline-flex min-h-9 items-center gap-1.5 rounded-md px-2.5 text-sm font-medium text-slate-500
+    @apply inline-flex min-h-11 items-center gap-1.5 rounded-md px-2.5 text-sm font-medium text-slate-500
     transition-colors hover:text-slate-800 sm:px-3 whitespace-nowrap;
   }
   .segment-btn-active { @apply bg-white font-semibold text-pine-900 shadow-sm; }
@@ -101,11 +101,11 @@
 
   /* ---- Inventario ---- */
   .stock-input {
-    @apply min-h-10 w-full rounded-lg border border-slate-300 bg-white px-2 text-center text-[15px] font-semibold tabular-nums
+    @apply min-h-11 w-full rounded-lg border border-slate-300 bg-white px-2 text-center text-[15px] font-semibold tabular-nums
     text-pine-950 placeholder:text-slate-300 focus:border-pine-600 focus:ring-2 focus:ring-pine-600/20 focus:outline-none transition-colors;
   }
 
   /* ---- Utilidades de navegación de fecha ---- */
-  .date-arrow { @apply grid size-9 place-items-center rounded-lg bg-slate-100 text-xl leading-none text-slate-600 transition-colors hover:bg-slate-200 disabled:opacity-40; }
-  .mini-button { @apply grid size-9 place-items-center rounded-md border border-slate-200 bg-white text-sm text-slate-600 transition-colors hover:bg-slate-50; }
+  .date-arrow { @apply grid size-11 shrink-0 place-items-center rounded-lg bg-slate-100 text-xl leading-none text-slate-600 transition-colors hover:bg-slate-200 disabled:opacity-40; }
+  .mini-button { @apply grid size-11 shrink-0 place-items-center rounded-md border border-slate-200 bg-white text-sm text-slate-600 transition-colors hover:bg-slate-50; }
 }
