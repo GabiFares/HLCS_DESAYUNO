@@ -1,6 +1,8 @@
 import { writeFile } from "node:fs/promises";
+import { assertLocalAppUrl } from "./assert-local-url.mjs";
 
 const appUrl = process.env.APP_URL ?? "http://127.0.0.1:5173";
+assertLocalAppUrl(appUrl);
 const debuggerUrl = process.env.CHROME_DEBUG_URL ?? "http://127.0.0.1:9222";
 const ROLLBACK_MESSAGE = "No se pudo guardar el orden. Intentá nuevamente.";
 
@@ -194,7 +196,7 @@ let page;
 let originalIds = [];
 try {
   page = await CdpPage.open(`${appUrl}/cafeteria`);
-  await page.waitFor("document.body.innerText.includes('Desayunos · Cafetería')", 10000);
+  await page.waitFor("document.body.innerText.includes('Cafetería')", 10000);
 
   originalIds = await apiOrder();
   if (originalIds.length < 4) throw new Error(`Se necesitan al menos 4 productos para probar; hay ${originalIds.length}`);
@@ -239,7 +241,7 @@ try {
 
   await page.send("Page.reload", { ignoreCache: true });
   await sleep(800);
-  await page.waitFor("document.body.innerText.includes('Desayunos · Cafetería')", 8000);
+  await page.waitFor("document.body.innerText.includes('Cafetería')", 8000);
   await openProductManager(page);
   await sleep(300);
   await expectOrder(page, expectedMiddle, "persistencia tras recarga");

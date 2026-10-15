@@ -1,3 +1,4 @@
+import { applyImport, previewImport } from "./desbravador/import";
 import { getBreakfastDay, updateBreakfastCount } from "./breakfast";
 import { HttpError, json } from "./http";
 import { createProduct, getInventory, listProducts, reorderProducts, updateInventory, updateProduct } from "./inventory";
@@ -12,6 +13,9 @@ async function route(request: Request, env: Env): Promise<Response> {
   if (method === "GET" && pathname === "/api/health") return json({ ok: true });
   if (pathname === "/api/stays" && method === "GET") return listStays(env.DB);
   if (pathname === "/api/stays" && method === "POST") return createStay(env.DB, request);
+
+  if (pathname === "/api/import/desbravador/preview" && method === "POST") return previewImport(env.DB, request);
+  if (pathname === "/api/import/desbravador/apply" && method === "POST") return applyImport(env.DB, request);
 
   let match = /^\/api\/stays\/(\d+)$/.exec(pathname);
   if (match?.[1] && method === "PATCH") return updateStay(env.DB, request, match[1]);

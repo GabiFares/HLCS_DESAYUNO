@@ -75,14 +75,14 @@ export function InventorySection({ date, items }: {
         <p className="section-caption mt-0.5">Registrá las cantidades del día. Los cambios se guardan automáticamente.</p>
       </div>
       {error && <div className="p-3"><ErrorBanner message={error} onDismiss={() => setError("")} /></div>}
-      <div className="grid grid-cols-[minmax(8rem,1fr)_5.5rem_5.5rem] items-end gap-2 border-b border-slate-100 bg-slate-50/70 px-3 py-2 text-[11px] font-medium uppercase tracking-wide text-slate-400 sm:grid-cols-[minmax(12rem,1fr)_8rem_8rem] sm:px-5">
+      <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_4.75rem_4.75rem] items-end gap-2 border-b border-slate-100 bg-slate-50/70 px-3 py-2 text-xs font-medium text-slate-500 sm:grid-cols-[minmax(12rem,1fr)_8rem_8rem] sm:px-5 sm:text-[11px] sm:uppercase sm:tracking-wide sm:text-slate-400">
         <span>Producto</span><span className="text-center">Ingresó</span><span className="text-center">Stock</span>
       </div>
       <div className="divide-y divide-slate-100">{items.map((item) => {
         const draft = drafts[item.productId] ?? { received: "", remaining: "" };
         return (
-          <div key={item.productId} className="grid grid-cols-[minmax(8rem,1fr)_5.5rem_5.5rem] items-center gap-2 px-3 py-2.5 sm:grid-cols-[minmax(12rem,1fr)_8rem_8rem] sm:px-5">
-            <label htmlFor={`received-${item.productId}`} className="min-w-0 pr-1 text-sm font-medium leading-tight text-slate-800">{item.name}{item.unit && <span className="mt-0.5 block text-xs font-normal text-slate-400">{item.unit}</span>}</label>
+          <div key={item.productId} className="grid min-w-0 grid-cols-[minmax(0,1fr)_4.75rem_4.75rem] items-center gap-2 px-3 py-2.5 sm:grid-cols-[minmax(12rem,1fr)_8rem_8rem] sm:px-5">
+            <label htmlFor={`received-${item.productId}`} className="min-w-0 break-words pr-1 text-sm font-medium leading-tight text-slate-800">{item.name}{item.unit && <span className="mt-0.5 block text-xs font-normal text-slate-500">{item.unit}</span>}</label>
             <input id={`received-${item.productId}`} aria-label={`${item.name}, cantidad ingresada`} inputMode="decimal" value={draft.received} onChange={(event) => change(item.productId, "received", event.target.value)} onBlur={() => flush(item.productId, draft)} className="stock-input" placeholder="—" />
             <input aria-label={`${item.name}, stock restante`} inputMode="decimal" value={draft.remaining} onChange={(event) => change(item.productId, "remaining", event.target.value)} onBlur={() => flush(item.productId, draft)} className="stock-input" placeholder="—" />
           </div>

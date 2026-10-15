@@ -1,4 +1,7 @@
+import { assertLocalAppUrl } from "./assert-local-url.mjs";
+
 const baseUrl = process.env.APP_URL ?? "http://127.0.0.1:5173";
+assertLocalAppUrl(baseUrl);
 
 function uruguayDate(offset = 0) {
   const parts = new Intl.DateTimeFormat("en-CA", {

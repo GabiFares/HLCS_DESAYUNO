@@ -1,8 +1,11 @@
 import { writeFile } from "node:fs/promises";
+import { assertLocalAppUrl } from "./assert-local-url.mjs";
 
 const appUrl = process.env.APP_URL ?? "http://127.0.0.1:5173";
+assertLocalAppUrl(appUrl);
 const debuggerUrl = process.env.CHROME_DEBUG_URL ?? "http://127.0.0.1:9222";
 const room = `QA-M-${String(Date.now()).slice(-6)}`;
+const shortRoom = String(500 + (Date.now() % 400));
 
 class CdpPage {
   constructor(socket, targetId) {
@@ -116,38 +119,42 @@ async function audit(page, route, width) {
 }
 
 let stayId;
+let shortStayId;
 let reception;
 let cafeteria;
 let browserInventoryBefore;
 let browserNoteBefore;
+let breakfastDate;
 try {
   reception = await CdpPage.open(`${appUrl}/recepcion`);
   cafeteria = await CdpPage.open(`${appUrl}/cafeteria`);
-  await reception.waitFor("document.body.innerText.includes('Estadías con desayuno')");
-  await cafeteria.waitFor("document.body.innerText.toLowerCase().includes('desayunos · cafetería') && document.body.innerText.toLowerCase().includes('hotel los cedros')");
+  await reception.waitFor("document.querySelector('h1')?.textContent === 'Recepción'");
+  await cafeteria.waitFor("document.querySelector('h1')?.textContent === 'Cafetería' && Boolean(document.querySelector('img[alt=\"Logo de Hotel Los Cedros\"]'))");
 
   await cafeteria.send("Page.addScriptToEvaluateOnNewDocument", {
     source: "sessionStorage.setItem('hlcs-reloads', String((Number(sessionStorage.getItem('hlcs-reloads')) || 0) + 1));",
   });
 
-  await reception.evaluate(`([...document.querySelectorAll('button')].find((button) => button.getAttribute('aria-label') === 'Nueva estadía')).click()`);
-  await reception.waitFor("Boolean(document.querySelector('[role=dialog]'))");
   const today = todayInUruguay();
-  await setInput(reception, 0, room);
-  await setInput(reception, 1, today);
-  await setInput(reception, 2, today);
-  await setInput(reception, 3, "2");
-  await reception.evaluate(`(() => {
-    const textarea = document.querySelector('[role="dialog"] textarea');
-    const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value').set;
-    setter.call(textarea, ${JSON.stringify("necesita huevo extra y es celíaco; no toma azúcar, prefiere leche descremada, pan sin sal y fruta de temporada; pide café descafeinado, jugo de naranja fresco y yogurt durazno temprano")});
-    textarea.dispatchEvent(new Event('input', { bubbles: true }));
-  })()`);
-  await reception.evaluate("document.querySelector('[role=dialog] form').requestSubmit()");
-  await reception.waitFor(`document.body.innerText.includes(${JSON.stringify(room)})`, 5000);
-  const stays = await fetch(`${appUrl}/api/stays`).then((response) => response.json());
-  stayId = stays.stays.find((stay) => stay.roomNumber === room)?.id;
-  if (!stayId) throw new Error("La creación desde el formulario de recepción no llegó a la API");
+  breakfastDate = today;
+  const noteText = "necesita huevo extra y es celíaco; no toma azúcar, prefiere leche descremada, pan sin sal y fruta de temporada; pide café descafeinado, jugo de naranja fresco y yogurt durazno temprano";
+  const created = await fetch(`${appUrl}/api/stays`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ roomNumber: room, checkInDate: today, checkOutDate: today, guestCount: 2, breakfastNotes: noteText }),
+  }).then((response) => response.json());
+  stayId = created.stay?.id;
+  if (!stayId) throw new Error("La creación vía API de la estadía de prueba falló");
+  const shortCreated = await fetch(`${appUrl}/api/stays`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ roomNumber: shortRoom, checkInDate: today, checkOutDate: today, guestCount: 1, breakfastNotes: "Sin TACC" }),
+  }).then((response) => response.json());
+  shortStayId = shortCreated.stay?.id;
+  if (!shortStayId) throw new Error("La creación de la habitación corta de prueba falló");
+  await reception.send("Page.reload", { ignoreCache: true });
+  await reception.waitFor(`document.body.innerText.includes(${JSON.stringify(room)})`, 8000);
+  await reception.waitFor(`document.body.innerText.includes(${JSON.stringify(shortRoom)})`, 8000);
 
   await new Promise((resolve) => setTimeout(resolve, 16_000));
   await cafeteria.waitFor(`document.body.innerText.includes(${JSON.stringify(room)})`, 3000);
@@ -173,22 +180,11 @@ try {
     return card?.innerText.replace(/\\s+/g, ' ') ?? '';
   })()`);
   if (!cafeteriaCard.includes("3")) throw new Error(`Polling no reflejó 3 pasajeros: ${cafeteriaCard}`);
-  if (!cafeteriaCard.includes("necesita huevo extra y es celíaco; no toma azúcar, prefiere leche descremada, pan sin sal y fruta de temporada; pide café descafeinado, jugo de naranja fresco y yogurt durazno temprano")) throw new Error(`La aclaración de desayuno no llegó a cafetería: ${cafeteriaCard}`);
   const receptionHasNote = await reception.evaluate(`document.body.innerText.includes(${JSON.stringify("necesita huevo extra y es celíaco; no toma azúcar, prefiere leche descremada, pan sin sal y fruta de temporada; pide café descafeinado, jugo de naranja fresco y yogurt durazno temprano")})`);
   if (!receptionHasNote) throw new Error("La aclaración no se ve en la tarjeta de recepción");
-  const noteToggleShown = await cafeteria.evaluate(`(() => {
-    const card = [...document.querySelectorAll('article')].find((article) => article.innerText.includes(${JSON.stringify(room)}));
-    const button = card ? [...card.querySelectorAll('button')].find((item) => item.textContent.includes('Ver más')) : null;
-    if (!button) return false;
-    button.click();
-    return true;
-  })()`);
-  if (!noteToggleShown) throw new Error("La aclaración larga no mostró el botón 'Ver más'");
-  await cafeteria.waitFor(`(() => {
-    const card = [...document.querySelectorAll('article')].find((article) => article.innerText.includes(${JSON.stringify(room)}));
-    return card ? card.innerText.includes('Ver menos') : false;
-  })()`, 3000);
-  console.log("M PASS — ambas rutas abiertas; cafetería mostró la aclaración y 'Ver más' la expande por completo");
+  const cafeteriaHidesNote = !cafeteriaCard.includes("necesita huevo extra");
+  if (!cafeteriaHidesNote) throw new Error("La tarjeta de Cafetería muestra información fuera del alcance operativo solicitado");
+  console.log("M PASS — ambas rutas abiertas; Cafetería refleja pasajeros y limita la tarjeta a los datos operativos solicitados");
 
   const inventory = await fetch(`${appUrl}/api/inventory/${today}`).then((response) => response.json());
   const firstProduct = inventory.items[0];
@@ -209,7 +205,7 @@ try {
   await new Promise((resolve) => setTimeout(resolve, 1200));
   await cafeteria.send("Page.reload", { ignoreCache: true });
   await new Promise((resolve) => setTimeout(resolve, 800));
-  await cafeteria.waitFor("document.body.innerText.includes('Desayunos por habitación') && document.body.innerText.includes('Control de stock')", 5000);
+  await cafeteria.waitFor("document.body.innerText.includes('Habitaciones') && document.body.innerText.includes('Stock')", 5000);
   await cafeteria.waitFor(`document.querySelector('input[aria-label*="cantidad ingresada"]')?.value === "6.5"`, 5000);
   const persistedBrowserValues = await cafeteria.evaluate(`({
     inventory: document.querySelector('input[aria-label*="cantidad ingresada"]')?.value,
@@ -235,7 +231,7 @@ try {
     rooms: document.querySelector('#tab-rooms').getAttribute('aria-selected'),
     stockVisible: document.querySelector('#panel-stock').hidden === false,
     roomsVisible: document.querySelector('#panel-rooms').hidden === false,
-    date: document.querySelector('input[type=date]').value,
+    date: document.querySelector('[data-date]')?.getAttribute('data-date'),
     search: document.querySelector('input[type=search]').value,
   }))()`);
   await new Promise((resolve) => setTimeout(resolve, 17_000));
@@ -244,7 +240,7 @@ try {
     rooms: document.querySelector('#tab-rooms').getAttribute('aria-selected'),
     stockVisible: document.querySelector('#panel-stock').hidden === false,
     roomsVisible: document.querySelector('#panel-rooms').hidden === false,
-    date: document.querySelector('input[type=date]').value,
+    date: document.querySelector('[data-date]')?.getAttribute('data-date'),
     search: document.querySelector('input[type=search]').value,
   }))()`);
   const loadsAtCheckEnd = (await cafeteria.evaluate("Number(sessionStorage.getItem('hlcs-reloads')) || 0"));
@@ -268,26 +264,97 @@ try {
   }
   console.log("N PASS — un refresh automático mantiene la pestaña activa, la fecha y la búsqueda sin recargar la página");
 
-  for (const width of [390, 768, 1280]) {
+  await cafeteria.evaluate(`(() => {
+    const search = document.querySelector('input[type=search]');
+    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
+    setter.call(search, '');
+    search.dispatchEvent(new Event('input', { bubbles: true }));
+  })()`);
+
+  const completedResponse = await fetch(`${appUrl}/api/breakfast/${today}/stays/${shortStayId}`, {
+    method: "PATCH",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ servedCount: 1 }),
+  });
+  if (!completedResponse.ok) throw new Error(`No se pudo preparar una habitación completa (${completedResponse.status})`);
+  await cafeteria.send("Page.reload", { ignoreCache: true });
+  await cafeteria.waitFor("document.body.innerText.includes('Ya desayunaron')", 5000);
+  await cafeteria.viewport(393);
+  const completeShortcut = await cafeteria.evaluate(`(async () => {
+    const summaryButton = [...document.querySelectorAll('button')].find((button) => button.innerText.includes('Ya desayunaron'));
+    if (!summaryButton) return { shortcutFound: false };
+    summaryButton.click();
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    const select = document.querySelector('select[aria-label="Filtrar desayunos"]');
+    const card = [...document.querySelectorAll('article')].find((article) => article.innerText.includes(${JSON.stringify(shortRoom)}));
+    const decrement = card?.querySelector('button[aria-label^="Restar desayuno"]');
+    return {
+      shortcutFound: true,
+      selectedFilter: select?.value,
+      cardFound: Boolean(card),
+      counterFound: Boolean(card?.querySelector('[aria-label^="Control de desayuno"]')),
+      decrementEnabled: decrement instanceof HTMLButtonElement && !decrement.disabled,
+    };
+  })()`);
+  if (!completeShortcut.shortcutFound || completeShortcut.selectedFilter !== "complete"
+    || !completeShortcut.cardFound || !completeShortcut.counterFound || !completeShortcut.decrementEnabled) {
+    throw new Error(`El atajo/contador de Completas no quedó operativo: ${JSON.stringify(completeShortcut)}`);
+  }
+  await cafeteria.screenshot("/private/tmp/cafeteria-completas-393.png");
+  await cafeteria.evaluate(`([...document.querySelectorAll('button')].find((button) => button.innerText.includes('Desayunos pendientes'))).click()`);
+  console.log("CAFETERÍA COMPLETE PASS — el resumen abre Completas y una habitación completa de hoy permite corregir el contador");
+
+  for (const width of [320, 375, 390, 393, 430, 768, 1280]) {
     const receptionAudit = await audit(reception, "recepcion", width);
     const cafeteriaAudit = await audit(cafeteria, "cafeteria", width);
     const small = [...receptionAudit.tooSmall, ...cafeteriaAudit.tooSmall];
     console.log(`RESPONSIVE ${width}px PASS — recepción ${receptionAudit.scrollWidth}/${receptionAudit.viewport}, cafetería ${cafeteriaAudit.scrollWidth}/${cafeteriaAudit.viewport}, controles pequeños visibles: ${JSON.stringify(small)}`);
   }
+  await cafeteria.viewport(393);
+  await cafeteria.screenshot("/private/tmp/cafeteria-rooms-393.png");
+  await cafeteria.viewport(1280);
+  await cafeteria.screenshot("/private/tmp/cafeteria-rooms-1280.png");
   await cafeteria.viewport(390);
   await cafeteria.evaluate("document.querySelector('#tab-stock').click()");
   await cafeteria.waitFor("document.querySelector('#panel-stock').hidden === false");
   await cafeteria.evaluate("document.querySelector('[aria-labelledby=stock-title]').scrollIntoView()");
   await cafeteria.screenshot("/private/tmp/cafeteria-stock-390.png");
-  await reception.viewport(390);
-  await reception.evaluate(`([...document.querySelectorAll('button')].find((button) => button.getAttribute('aria-label') === 'Nueva estadía')).click()`);
+
+  await reception.viewport(393);
+  const checkoutOpened = await reception.evaluate(`(() => {
+    const button = document.querySelector(${JSON.stringify(`[aria-label="Finalizar habitación ${shortRoom}"]`)});
+    if (!(button instanceof HTMLButtonElement)) return false;
+    button.click();
+    return true;
+  })()`);
+  if (!checkoutOpened) throw new Error(`No se encontró el check-out de la habitación ${shortRoom}`);
+  await reception.waitFor("document.querySelector('[role=dialog]')?.innerText.includes('Confirmar check-out')");
+  await reception.screenshot("/private/tmp/recepcion-checkout-393.png");
+  await reception.send("Input.dispatchKeyEvent", { type: "keyDown", key: "Escape", code: "Escape" });
+  await reception.send("Input.dispatchKeyEvent", { type: "keyUp", key: "Escape", code: "Escape" });
+  await reception.waitFor("!document.querySelector('[role=dialog]')");
+  console.log("CHECK-OUT MODAL PASS — confirmación propia visible y cierre por Escape operativo");
+
+  await reception.evaluate(`([...document.querySelectorAll('button')].find((button) => (button.getAttribute('aria-label') || '').startsWith('Editar habitación'))).click()`);
   await reception.waitFor("Boolean(document.querySelector('[role=dialog]'))");
-  const dialogFits = await reception.evaluate(`(() => { const rect = document.querySelector('[role=dialog]').getBoundingClientRect(); return rect.left >= 0 && rect.right <= innerWidth && rect.bottom <= innerHeight; })()`);
-  if (!dialogFits) throw new Error("El formulario de recepción no cabe en el viewport móvil");
-  await reception.screenshot("/private/tmp/recepcion-modal-390.png");
-  console.log("RESPONSIVE MODAL PASS — formulario completo dentro del viewport de 390px");
+  for (const width of [320, 375, 390, 393, 430]) {
+    await reception.viewport(width);
+    const dialogFits = await reception.evaluate(`(() => { const rect = document.querySelector('[role=dialog]').getBoundingClientRect(); return rect.left >= 0 && rect.right <= innerWidth && rect.bottom <= innerHeight; })()`);
+    if (!dialogFits) throw new Error(`El formulario de recepción no cabe en el viewport móvil de ${width}px`);
+  }
+  await reception.viewport(393);
+  await reception.screenshot("/private/tmp/recepcion-modal-393.png");
+  console.log("RESPONSIVE MODAL PASS — formulario completo dentro de 320/375/390/393/430px");
 } finally {
+  if (shortStayId && breakfastDate) {
+    try {
+      await fetch(`${appUrl}/api/breakfast/${breakfastDate}/stays/${shortStayId}`, {
+        method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ servedCount: 0 }),
+      });
+    } catch { /* best effort para permitir borrar la estadía QA */ }
+  }
   if (stayId) await fetch(`${appUrl}/api/stays/${stayId}`, { method: "DELETE" });
+  if (shortStayId) await fetch(`${appUrl}/api/stays/${shortStayId}`, { method: "DELETE" });
   if (browserInventoryBefore) await fetch(`${appUrl}/api/inventory/${browserInventoryBefore.date}/products/${browserInventoryBefore.productId}`, {
     method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(browserInventoryBefore),
   });

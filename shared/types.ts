@@ -8,6 +8,8 @@ export interface Stay {
   completedOn: string | null;
   createdAt: string;
   updatedAt: string;
+  source?: "manual" | "desbravador";
+  externalId?: string | null;
 }
 
 export interface BreakfastStay {
