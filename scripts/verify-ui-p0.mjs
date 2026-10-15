@@ -1,7 +1,9 @@
 import { writeFile } from "node:fs/promises";
 import { buildPdf, tableRow } from "../tests/helpers/pdfFixture.ts";
+import { assertLocalAppUrl } from "./assert-local-url.mjs";
 
 const appUrl = process.env.APP_URL ?? "http://127.0.0.1:5173";
+assertLocalAppUrl(appUrl);
 const debuggerUrl = process.env.CHROME_DEBUG_URL ?? "http://127.0.0.1:9222";
 const suffix = Number(String(Date.now()).slice(-3));
 const room = String(8000 + suffix);

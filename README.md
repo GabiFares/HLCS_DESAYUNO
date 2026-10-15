@@ -163,6 +163,6 @@ Procedimiento recomendado:
 
 Para revertir solamente el código, usar una versión estable identificada previamente con `wrangler deployments list` y `wrangler rollback <VERSION_ID>`. Un rollback del Worker no revierte D1. La recuperación de datos debe realizarse por separado mediante Time Travel o el respaldo SQL, después de detener escrituras y confirmar el punto exacto de restauración.
 
-> **Importante:** los scripts `test:e2e:local`, `test:browser:local`, `test:ui-p0:local` y `test:dnd:local` crean, modifican o eliminan datos para verificar flujos. Deben ejecutarse exclusivamente contra el entorno local; nunca se debe configurar `APP_URL` con la URL de producción.
+> **Importante:** los scripts `test:e2e:local`, `test:browser:local`, `test:ui-p0:local` y `test:dnd:local` crean, modifican o eliminan datos para verificar flujos. Deben ejecutarse exclusivamente contra el entorno local y rechazan cualquier `APP_URL` cuyo host no sea loopback.
 
 La aplicación todavía no incluye autenticación ni autorización; esta limitación debe considerarse antes de ampliar el acceso al Worker.

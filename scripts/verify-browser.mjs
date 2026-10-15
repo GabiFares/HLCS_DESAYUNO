@@ -1,6 +1,8 @@
 import { writeFile } from "node:fs/promises";
+import { assertLocalAppUrl } from "./assert-local-url.mjs";
 
 const appUrl = process.env.APP_URL ?? "http://127.0.0.1:5173";
+assertLocalAppUrl(appUrl);
 const debuggerUrl = process.env.CHROME_DEBUG_URL ?? "http://127.0.0.1:9222";
 const room = `QA-M-${String(Date.now()).slice(-6)}`;
 const shortRoom = String(500 + (Date.now() % 400));

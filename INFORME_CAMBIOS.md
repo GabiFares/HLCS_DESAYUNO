@@ -88,6 +88,7 @@ La prueba `npm run test:browser:local`, con Vite y Chrome headless activos, cubr
 - `scripts/verify-browser.mjs`
 - `scripts/verify-ui-p0.mjs`
 - `scripts/verify-dnd.mjs`
+- `scripts/assert-local-url.mjs`
 
 ## Fuera de alcance y aclaraciones
 
