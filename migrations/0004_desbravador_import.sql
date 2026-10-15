@@ -2,7 +2,8 @@
 --
 -- `source` registra el origen de creación de la estadía. Nunca se reescribe:
 -- una estadía creada a mano que luego se actualiza con datos de Desbravador
--- conserva `manual` y su vínculo queda en `stay_import_items`.
+-- conserva `manual`. Cada ejecución se audita de forma agregada en
+-- `stay_imports`; no se almacena una tabla de detalle por estadía.
 --
 -- `external_id` es una REFERENCIA, no una clave. El campo ID del informe de
 -- Desbravador identifica una reserva y se repite en varias filas (Check-in,

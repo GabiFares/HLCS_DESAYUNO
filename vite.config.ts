@@ -13,7 +13,7 @@ export default defineConfig({
     hlcs_desayuno: {
       build: {
         rollupOptions: {
-          output: { inlineDynamicImports: true },
+          output: { codeSplitting: false },
         },
       },
     },

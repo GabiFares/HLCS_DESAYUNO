@@ -361,7 +361,10 @@ export function ProductManager({ onChanged }: { onChanged: () => void }) {
               placeholder="Unidad" />
           )}
         </FormField>
-        <button className="btn-primary min-w-12 px-3" aria-label="Agregar producto">＋</button>
+        <div>
+          <span aria-hidden className="field-label invisible">Acción</span>
+          <button className="btn-primary min-w-12 px-3 text-xl leading-none" aria-label="Agregar producto">+</button>
+        </div>
       </form>
       {dragId !== null && draggedProduct && (
         <>

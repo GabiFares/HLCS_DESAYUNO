@@ -23,10 +23,22 @@ function CalendarIcon() {
   );
 }
 
-export function DateNavigator({ date, onChange, allowFuture = false }: {
+function mobileDate(value: string): string {
+  const [year, month, day] = value.split("-").map(Number);
+  if (!year || !month || !day) return value;
+  return capitalize(new Intl.DateTimeFormat("es-UY", {
+    weekday: "short",
+    day: "numeric",
+    month: "long",
+    timeZone: "UTC",
+  }).format(new Date(Date.UTC(year, month - 1, day))));
+}
+
+export function DateNavigator({ date, onChange, allowFuture = false, compact = false }: {
   date: string;
   onChange: (date: string) => void;
   allowFuture?: boolean;
+  compact?: boolean;
 }) {
   const today = todayInUruguay();
   const isDesktop = useMediaQuery("(min-width: 640px)");
@@ -48,6 +60,7 @@ export function DateNavigator({ date, onChange, allowFuture = false }: {
   }, [open]);
 
   const full = capitalize(formatDate(date, "long"));
+  const mobile = mobileDate(date);
 
   function select(next: string) {
     onChange(next);
@@ -55,7 +68,7 @@ export function DateNavigator({ date, onChange, allowFuture = false }: {
   }
 
   return (
-    <div ref={rootRef} className="relative mb-4">
+    <div ref={rootRef} className={`relative ${compact ? "" : "mb-4"}`}>
       <div className="flex items-center gap-1">
         <button type="button" onClick={() => onChange(shiftCalendarDate(date, -1))} aria-label="Día anterior" title="Día anterior" className="date-arrow">‹</button>
         <button
@@ -65,10 +78,13 @@ export function DateNavigator({ date, onChange, allowFuture = false }: {
           aria-expanded={open}
           aria-label={`Elegir fecha: ${full}`}
           onClick={() => setOpen((current) => !current)}
-          className="flex min-h-11 min-w-0 flex-1 items-center justify-center gap-2 rounded-lg px-2 text-sm font-semibold text-pine-950 transition-colors hover:bg-slate-100 focus-visible:bg-slate-100"
+          className={`flex min-h-11 min-w-0 flex-1 items-center justify-center gap-2 rounded-lg px-2 text-sm font-semibold text-pine-950 transition-colors hover:bg-slate-100 focus-visible:bg-slate-100 ${compact ? "sm:text-base" : ""}`}
         >
           <CalendarIcon />
-          <span className="truncate">{full}</span>
+          {compact ? <>
+            <span className="whitespace-nowrap sm:hidden">{mobile}</span>
+            <span className="hidden whitespace-nowrap sm:inline">{full}</span>
+          </> : <span className="truncate">{full}</span>}
         </button>
         <button type="button" disabled={!allowFuture && date >= today} onClick={() => onChange(shiftCalendarDate(date, 1))} aria-label="Día siguiente" title="Día siguiente" className="date-arrow">›</button>
       </div>

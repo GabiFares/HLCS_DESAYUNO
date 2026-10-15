@@ -11,6 +11,23 @@ const externalId = `P0-${Date.now()}`;
 const validPdfPath = `/private/tmp/hlcs-p0-${externalId}.pdf`;
 const invalidPdfPath = `/private/tmp/hlcs-p0-invalid-${externalId}.pdf`;
 
+function uruguayDate(offsetDays = 0) {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Montevideo", year: "numeric", month: "2-digit", day: "2-digit",
+  }).formatToParts(new Date());
+  const value = (type) => Number(parts.find((part) => part.type === type)?.value);
+  const date = new Date(Date.UTC(value("year"), value("month") - 1, value("day") + offsetDays));
+  return date.toISOString().slice(0, 10);
+}
+
+function reportDate(isoDate) {
+  const [year, month, day] = isoDate.split("-");
+  return `${day}/${month}/${year}`;
+}
+
+const checkInDate = reportDate(uruguayDate(1));
+const checkOutDate = reportDate(uruguayDate(4));
+
 class CdpPage {
   constructor(socket, targetId) {
     this.socket = socket;
@@ -127,8 +144,8 @@ function clickButton(page, text) {
 
 await writeFile(validPdfPath, buildPdf([{
   runs: [
-    ...tableRow(500, [room, "HOSPEDAJE", "Check-in", externalId, "HUESPED QA", "15/10/2026", "18/10/2026", "2"]),
-    ...tableRow(480, [reviewRoom, "HOSPEDAJE", "Transferencia", `${externalId}-R`, "HUESPED QA", "15/10/2026", "18/10/2026", "1"]),
+    ...tableRow(500, [room, "HOSPEDAJE", "Check-in", externalId, "HUESPED QA", checkInDate, checkOutDate, "2"]),
+    ...tableRow(480, [reviewRoom, "HOSPEDAJE", "Transferencia", `${externalId}-R`, "HUESPED QA", checkInDate, checkOutDate, "1"]),
     ...tableRow(460, [ignoredRoom, "MANTENIMIENTO", "Inicio", null, "QA", null, null, null]),
   ],
 }]));
@@ -140,7 +157,7 @@ let importedStayId;
 try {
   reception = await CdpPage.open(`${appUrl}/recepcion`);
   await reception.viewport(320);
-  await reception.waitFor("document.body.innerText.includes('Estadías con desayuno')");
+  await reception.waitFor("document.querySelector('h1')?.textContent === 'Recepción'");
   if (!await clickButton(reception, "Importar reservas")) throw new Error("No se encontró Importar reservas");
   await reception.waitFor("Boolean(document.querySelector('#desbravador-file'))");
 
@@ -153,7 +170,7 @@ try {
 
   await reception.upload("#desbravador-file", validPdfPath);
   await reception.waitFor("document.body.innerText.includes('Vista previa') && document.body.innerText.includes('No se importará automáticamente')", 15_000);
-  for (const width of [320, 375, 390]) {
+  for (const width of [320, 375, 390, 393, 430]) {
     await reception.viewport(width);
     await assertFits(reception, `modal importación ${width}px`, "[role=dialog]");
   }
@@ -171,29 +188,37 @@ try {
 
   if (!await clickButton(reception, "Cerrar")) throw new Error("No se encontró Cerrar");
   await reception.waitFor("!document.querySelector('[role=dialog]')");
+  const selectedUpcoming = await reception.evaluate(`(() => {
+    const control = document.querySelector('select[aria-label="Filtrar estadías"]');
+    if (!(control instanceof HTMLSelectElement)) return false;
+    control.value = "upcoming";
+    control.dispatchEvent(new Event("change", { bubbles: true }));
+    return true;
+  })()`);
+  if (!selectedUpcoming) throw new Error("No se encontró el selector móvil de filtros");
   await reception.waitFor(`document.body.innerText.includes(${JSON.stringify(room)})`);
 
   await reception.viewport(320);
   await reception.evaluate("document.querySelector('[aria-label^=\"Elegir fecha:\"]').click()");
   await reception.waitFor("Boolean(document.querySelector('[role=dialog][aria-label=\"Elegir fecha\"]'))");
-  for (const width of [320, 375, 390]) {
+  for (const width of [320, 375, 390, 393, 430]) {
     await reception.viewport(width);
     await assertFits(reception, `calendario ${width}px`, "[role=dialog][aria-label=\"Elegir fecha\"]");
   }
   await reception.screenshot("/private/tmp/calendar-390.png");
   await reception.evaluate(`([...document.querySelectorAll('[role=dialog][aria-label="Elegir fecha"] button')].find((button) => button.textContent?.trim() === 'Cerrar')).click()`);
-  console.log("CALENDAR P0 PASS — sin overflow y con controles táctiles a 320/375/390px");
+  console.log("CALENDAR P0 PASS — sin overflow y con controles táctiles a 320/375/390/393/430px");
 
   cafeteria = await CdpPage.open(`${appUrl}/cafeteria`);
-  await cafeteria.waitFor("document.body.innerText.includes('Control de stock')");
+  await cafeteria.waitFor("document.body.innerText.includes('Stock')");
   await cafeteria.evaluate("document.querySelector('#tab-stock').click()");
   await cafeteria.waitFor("document.querySelector('#panel-stock').hidden === false && Boolean(document.querySelector('[aria-labelledby=stock-title]'))");
-  for (const width of [320, 375, 390]) {
+  for (const width of [320, 375, 390, 393, 430]) {
     await cafeteria.viewport(width);
     await assertFits(cafeteria, `inventario ${width}px`, "[aria-labelledby=stock-title]");
   }
   await cafeteria.screenshot("/private/tmp/inventory-390.png");
-  console.log("INVENTORY P0 PASS — grilla sin overflow y campos táctiles a 320/375/390px");
+  console.log("INVENTORY P0 PASS — grilla sin overflow y campos táctiles a 320/375/390/393/430px");
 } finally {
   try {
     const stays = await fetch(`${appUrl}/api/stays`).then((response) => response.json());

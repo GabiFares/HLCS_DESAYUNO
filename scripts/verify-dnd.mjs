@@ -194,7 +194,7 @@ let page;
 let originalIds = [];
 try {
   page = await CdpPage.open(`${appUrl}/cafeteria`);
-  await page.waitFor("document.body.innerText.includes('Desayunos · Cafetería')", 10000);
+  await page.waitFor("document.body.innerText.includes('Cafetería')", 10000);
 
   originalIds = await apiOrder();
   if (originalIds.length < 4) throw new Error(`Se necesitan al menos 4 productos para probar; hay ${originalIds.length}`);
@@ -239,7 +239,7 @@ try {
 
   await page.send("Page.reload", { ignoreCache: true });
   await sleep(800);
-  await page.waitFor("document.body.innerText.includes('Desayunos · Cafetería')", 8000);
+  await page.waitFor("document.body.innerText.includes('Cafetería')", 8000);
   await openProductManager(page);
   await sleep(300);
   await expectOrder(page, expectedMiddle, "persistencia tras recarga");

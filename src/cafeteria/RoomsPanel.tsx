@@ -1,29 +1,28 @@
 import { useMemo, useState } from "react";
 import type { BreakfastDay, BreakfastStay } from "../../shared/types";
 import { EmptyState } from "../components/Feedback";
-import { ExpandableNote } from "../components/ExpandableNote";
-import { formatDate, shiftCalendarDate, todayInUruguay } from "../lib/dates";
+import { todayInUruguay } from "../lib/dates";
 
-type Filter = "all" | "unregistered" | "inProgress" | "complete";
-type RoomStatus = "unregistered" | "inProgress" | "complete";
+export type BreakfastRoomFilter = "all" | "pending" | "partial" | "complete";
+type RoomStatus = "pending" | "partial" | "complete";
 
-const FILTERS: { id: Filter; label: string }[] = [
+const FILTERS: { id: BreakfastRoomFilter; label: string }[] = [
   { id: "all", label: "Todas" },
-  { id: "unregistered", label: "Sin registrar" },
-  { id: "inProgress", label: "En proceso" },
+  { id: "pending", label: "Pendientes" },
+  { id: "partial", label: "Parciales" },
   { id: "complete", label: "Completas" },
 ];
 
 function statusOf(stay: BreakfastStay): RoomStatus {
   if (stay.servedCount >= stay.guestCount) return "complete";
-  if (stay.servedCount === 0) return "unregistered";
-  return "inProgress";
+  if (stay.servedCount === 0) return "pending";
+  return "partial";
 }
 
-const STATUS_META: Record<"unregistered" | "inProgress" | "complete", { label: string; badge: string }> = {
-  unregistered: { label: "Sin registrar", badge: "rounded-md bg-amber-50 px-1.5 py-0.5 text-[11px] font-semibold text-amber-700" },
-  inProgress: { label: "En proceso", badge: "rounded-md bg-slate-100 px-1.5 py-0.5 text-[11px] font-semibold text-slate-600" },
-  complete: { label: "Completa", badge: "rounded-md bg-pine-50 px-1.5 py-0.5 text-[11px] font-semibold text-pine-700" },
+const STATUS_META: Record<RoomStatus, { label: string; badge: string }> = {
+  pending: { label: "Pendiente", badge: "border-orange-100 bg-orange-50 text-orange-700" },
+  partial: { label: "Parcial", badge: "border-amber-100 bg-amber-50 text-amber-700" },
+  complete: { label: "Completa", badge: "border-emerald-100 bg-emerald-50 text-emerald-700" },
 };
 
 function roomKey(stay: BreakfastStay): [number, string] {
@@ -37,127 +36,132 @@ const byRoom = (a: BreakfastStay, b: BreakfastStay) => {
   return ai - bi || as.localeCompare(bs);
 };
 
-function checkoutLabel(stay: BreakfastStay, dayDate: string): string {
-  const short = formatDate(stay.checkOutDate, "short").slice(0, 5);
-  if (stay.checkOutDate === dayDate) return `Salida: hoy, ${short}`;
-  if (stay.checkOutDate === shiftCalendarDate(dayDate, 1)) return `Salida: mañana, ${short}`;
-  return `Salida: ${formatDate(stay.checkOutDate, "short")}`;
+function BreakfastCounter({ stay, canEdit, saving, onCount }: {
+  stay: BreakfastStay;
+  canEdit: boolean;
+  saving: boolean;
+  onCount: (stayId: number, nextCount: number) => void;
+}) {
+  return (
+    <div className="flex min-w-[132px] items-center overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm sm:min-w-[148px]" aria-label={`Control de desayuno para habitación ${stay.roomNumber}`}>
+      <button type="button" disabled={!canEdit || stay.servedCount === 0} onClick={() => onCount(stay.stayId, stay.servedCount - 1)}
+        aria-label={`Restar desayuno a habitación ${stay.roomNumber}`} title={`Restar desayuno a habitación ${stay.roomNumber}`}
+        className="grid min-h-11 w-11 shrink-0 place-items-center bg-slate-50 text-xl font-medium leading-none text-slate-600 transition-colors hover:bg-slate-100 disabled:cursor-not-allowed disabled:text-slate-300">−</button>
+      <output aria-live="polite" className="relative grid min-h-11 min-w-12 flex-1 place-items-center border-x border-slate-200 text-sm font-bold tabular-nums text-slate-950">
+        {stay.servedCount}
+        {saving && <span className="absolute right-1 top-1 size-2 animate-pulse rounded-full bg-[#087447]" aria-label="Guardando" />}
+      </output>
+      <button type="button" disabled={!canEdit || stay.servedCount === stay.guestCount} onClick={() => onCount(stay.stayId, stay.servedCount + 1)}
+        aria-label={`Sumar desayuno a habitación ${stay.roomNumber}`} title={`Sumar desayuno a habitación ${stay.roomNumber}`}
+        className="grid min-h-11 w-11 shrink-0 place-items-center bg-[#087447] text-xl font-medium leading-none text-white transition-colors hover:bg-[#075f3c] disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400">+</button>
+    </div>
+  );
 }
 
-function RoomRow({ stay, dayDate, isFuture, saving, onCount }: {
+function RoomRow({ stay, canEdit, saving, onCount }: {
   stay: BreakfastStay;
-  dayDate: string;
-  isFuture: boolean;
+  canEdit: boolean;
   saving: boolean;
   onCount: (stayId: number, nextCount: number) => void;
 }) {
   const status = statusOf(stay);
   const meta = STATUS_META[status];
   return (
-    <article className="flex items-start gap-3 px-4 py-3">
-      <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-center gap-2">
-          <h3 className="truncate text-[15px] font-semibold tracking-tight text-pine-900">
-            Habitación <span className="tabular-nums">{stay.roomNumber}</span>
-          </h3>
-          <span className={`shrink-0 ${meta.badge}`}>{meta.label}</span>
-          {saving && <span className="shrink-0 text-[11px] text-slate-400">Guardando…</span>}
+    <article className={`rounded-xl border p-3 shadow-[0_2px_10px_rgba(22,50,37,0.035)] lg:grid lg:grid-cols-[minmax(140px,1.15fr)_125px_105px_130px_170px] lg:items-center lg:gap-4 lg:rounded-none lg:border-0 lg:border-b lg:border-slate-100 lg:bg-white lg:px-5 lg:py-2.5 lg:shadow-none last:lg:border-b-0 ${status === "complete" ? "border-emerald-100 bg-emerald-50/45" : "border-slate-200 bg-white"}`}>
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 lg:hidden">
+        <div className="min-w-0">
+          <div className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1">
+            <h3 className="min-w-0 break-words text-[17px] font-bold leading-tight tracking-[-0.02em] text-slate-950">{stay.roomNumber}</h3>
+            <span className={`shrink-0 rounded-lg border px-1.5 py-1 text-[11px] font-semibold ${meta.badge}`}>{meta.label}</span>
+          </div>
+          <p className="mt-1 text-sm font-medium tabular-nums text-slate-700">{stay.guestCount} {stay.guestCount === 1 ? "pasajero" : "pasajeros"}</p>
+          <p className="mt-0.5 text-[13px] tabular-nums text-slate-500">Registrados: {stay.servedCount} de {stay.guestCount}</p>
         </div>
-        <p className="mt-1 text-[13px] text-slate-500">{checkoutLabel(stay, dayDate)}</p>
-        <p className="mt-0.5 text-[13px] font-medium text-slate-600 tabular-nums">
-          {stay.servedCount} de {stay.guestCount} desayunos registrados
-        </p>
-        {stay.breakfastNotes && <ExpandableNote note={stay.breakfastNotes} />}
+        <BreakfastCounter stay={stay} canEdit={canEdit} saving={saving} onCount={onCount} />
       </div>
 
-      <div className="flex shrink-0 items-start gap-1.5 pt-1">
-        <button type="button" disabled={isFuture || stay.servedCount === 0} onClick={() => onCount(stay.stayId, stay.servedCount - 1)}
-          aria-label={`Restar desayuno a habitación ${stay.roomNumber}`} title={`Restar desayuno a habitación ${stay.roomNumber}`}
-          className="counter-button">−</button>
-        <button type="button" disabled={isFuture || stay.servedCount === stay.guestCount} onClick={() => onCount(stay.stayId, stay.servedCount + 1)}
-          aria-label={`Sumar desayuno a habitación ${stay.roomNumber}`} title={`Sumar desayuno a habitación ${stay.roomNumber}`}
-          className="counter-button counter-button-add">＋</button>
+      <div className="hidden min-w-0 lg:block"><h3 className="break-words text-base font-bold leading-tight text-slate-950">{stay.roomNumber}</h3></div>
+      <div className="hidden lg:block"><span className={`inline-flex rounded-lg border px-2 py-1 text-xs font-semibold ${meta.badge}`}>{meta.label}</span></div>
+      <div className="hidden text-sm font-medium tabular-nums text-slate-800 lg:block">{stay.guestCount}</div>
+      <div className="hidden text-sm font-medium tabular-nums text-slate-800 lg:block">{stay.servedCount} de {stay.guestCount}</div>
+      <div className="hidden justify-end lg:flex">
+        <BreakfastCounter stay={stay} canEdit={canEdit} saving={saving} onCount={onCount} />
       </div>
     </article>
   );
 }
 
-function GroupHeading({ label, count }: { label: string; count: number }) {
-  return (
-    <div className="flex items-center gap-3 px-4 pb-0.5 pt-2.5">
-      <h2 className="group-label">{label}</h2>
-      <span className="h-px flex-1 bg-slate-100" aria-hidden />
-      <span className="text-xs font-medium tabular-nums text-slate-400">{count}</span>
-    </div>
-  );
-}
-
-const EMPTY_TEXT: Record<"unregistered" | "inProgress" | "complete", { title: string; detail: string }> = {
-  unregistered: { title: "No hay habitaciones sin registrar", detail: "Todas las habitaciones ya tienen desayunos cargados." },
-  inProgress: { title: "No hay habitaciones en proceso", detail: "Las habitaciones están sin registrar o ya están completas." },
-  complete: { title: "No hay habitaciones completas", detail: "Todavía no se completó ningún desayuno." },
+const EMPTY_TEXT: Record<"pending" | "partial" | "complete", { title: string; detail: string }> = {
+  pending: { title: "No hay desayunos pendientes", detail: "Todos los desayunos previstos para estas habitaciones ya están registrados." },
+  partial: { title: "No hay desayunos parcialmente registrados", detail: "Los desayunos están sin registrar o ya fueron completados." },
+  complete: { title: "No hay desayunos completos", detail: "Todavía no se completó el registro de ningún desayuno." },
 };
 
-export function RoomsPanel({ day, savingIds, onCount }: {
+export function RoomsPanel({ day, filter, onFilterChange, savingIds, onCount }: {
   day: BreakfastDay;
+  filter: BreakfastRoomFilter;
+  onFilterChange: (filter: BreakfastRoomFilter) => void;
   savingIds: ReadonlySet<number>;
   onCount: (stayId: number, nextCount: number) => void;
 }) {
   const [query, setQuery] = useState("");
-  const [filter, setFilter] = useState<Filter>("all");
-  const isFuture = day.date > todayInUruguay();
+  const canEdit = day.date === todayInUruguay();
 
   const lists = useMemo(() => {
     const q = query.trim().toLowerCase();
     const byQuery = (stay: BreakfastStay) => !q || stay.roomNumber.toLowerCase().includes(q);
+    const all = day.stays.filter(byQuery).sort(byRoom);
     return {
-      unregistered: day.stays.filter((stay) => statusOf(stay) === "unregistered" && byQuery(stay)).sort(byRoom),
-      inProgress: day.stays.filter((stay) => statusOf(stay) === "inProgress" && byQuery(stay)).sort(byRoom),
-      complete: day.stays.filter((stay) => statusOf(stay) === "complete" && byQuery(stay)).sort(byRoom),
+      all,
+      pending: all.filter((stay) => stay.servedCount < stay.guestCount),
+      partial: all.filter((stay) => statusOf(stay) === "partial"),
+      complete: all.filter((stay) => statusOf(stay) === "complete"),
       hasQuery: q.length > 0,
     };
   }, [day.stays, query]);
 
-  const total = lists.unregistered.length + lists.inProgress.length + lists.complete.length;
-  const countFor = (id: Filter): number => id === "unregistered" ? lists.unregistered.length
-    : id === "inProgress" ? lists.inProgress.length
-      : id === "complete" ? lists.complete.length : total;
-
-  const renderGroup = (status: "unregistered" | "inProgress" | "complete") => {
-    const items = lists[status];
-    if (items.length === 0) return null;
-    return (
-      <section aria-label={STATUS_META[status].label}>
-        <GroupHeading label={STATUS_META[status].label} count={items.length} />
-        <div className="divide-y divide-slate-100">
-          {items.map((stay) => (
-            <RoomRow key={stay.stayId} stay={stay} dayDate={day.date} isFuture={isFuture}
-              saving={savingIds.has(stay.stayId)} onCount={onCount} />
-          ))}
-        </div>
-      </section>
-    );
-  };
+  const total = lists.all.length;
+  const countFor = (id: BreakfastRoomFilter): number => lists[id].length;
+  const visible = lists[filter];
+  const activeFilter = FILTERS.find((option) => option.id === filter)!;
+  const pendingBreakfasts = visible.reduce((totalCount, stay) => totalCount + Math.max(0, stay.guestCount - stay.servedCount), 0);
 
   return (
     <div className="space-y-3">
-      <div className="flex flex-col gap-2 rounded-xl border border-slate-200 bg-white p-2 sm:flex-row sm:items-center sm:gap-1.5 sm:ps-3.5 focus-within:border-pine-600 focus-within:ring-2 focus-within:ring-pine-600/15">
+      <div className="grid gap-2 lg:grid-cols-[minmax(250px,1fr)_auto] lg:items-center">
         <label className="relative block min-w-0 flex-1">
           <span className="sr-only">Buscar habitación</span>
-          <svg aria-hidden className="pointer-events-none absolute left-0.5 top-1/2 size-4 -translate-y-1/2 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m21 21-4.3-4.3M17 11a6 6 0 1 1-12 0 6 6 0 0 1 12 0Z" /></svg>
+          <svg aria-hidden className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="m21 21-4.3-4.3M17 11a6 6 0 1 1-12 0 6 6 0 0 1 12 0Z" /></svg>
           <input type="search" value={query} onChange={(event) => setQuery(event.target.value)}
             placeholder="Buscar habitación…"
-            className="min-h-11 w-full appearance-none border-0 bg-transparent pe-1 ps-6 text-[15px] text-pine-950 placeholder:text-slate-400 focus:outline-none" />
+            className="min-h-12 w-full appearance-none rounded-xl border border-slate-200 bg-white pe-4 ps-12 text-[15px] text-slate-950 shadow-[0_2px_10px_rgba(22,50,37,0.035)] placeholder:text-slate-400 focus:border-pine-600 focus:ring-2 focus:ring-pine-600/15 focus:outline-none" />
         </label>
 
-        <div role="group" aria-label="Filtrar habitaciones" className="flex w-full flex-wrap items-center gap-1 rounded-lg bg-slate-100 p-1 sm:w-auto">
+        <div className="sm:hidden">
+          <label className="relative mx-auto block w-full max-w-xs">
+            <span className="sr-only">Filtrar desayunos</span>
+            <span aria-hidden className="flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#e9f0eb] px-3.5 text-center text-sm text-pine-800">
+              <span>Filtrar:</span>
+              <strong className="font-semibold">{activeFilter.label}</strong>
+              <svg className="size-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m7 10 5 5 5-5" /></svg>
+            </span>
+            <select value={filter} onChange={(event) => onFilterChange(event.target.value as BreakfastRoomFilter)} aria-label="Filtrar desayunos" className="absolute inset-0 h-full w-full cursor-pointer opacity-0">
+              {FILTERS.map((option) => <option key={option.id} value={option.id}>{option.label} · {countFor(option.id)}</option>)}
+            </select>
+          </label>
+          <p className="mt-1.5 text-center text-xs font-medium tabular-nums text-slate-500">
+            {filter === "pending" ? `${pendingBreakfasts} ${pendingBreakfasts === 1 ? "desayuno pendiente" : "desayunos pendientes"}` : `${visible.length} ${visible.length === 1 ? "habitación" : "habitaciones"}`}
+          </p>
+        </div>
+
+        <div role="group" aria-label="Filtrar desayunos" className="hidden gap-1.5 sm:flex">
           {FILTERS.map((option) => {
             const active = filter === option.id;
             return (
-              <button key={option.id} type="button" onClick={() => setFilter(option.id)} aria-pressed={active}
-                className={`segment-btn flex-1 justify-center sm:flex-initial ${active ? "segment-btn-active" : ""}`}>
+              <button key={option.id} type="button" onClick={() => onFilterChange(option.id)} aria-pressed={active}
+                className={`flex min-h-11 min-w-0 items-center justify-center gap-2 rounded-xl px-3 text-sm font-semibold transition-colors lg:min-w-[108px] ${active ? "bg-[#087447] text-white shadow-[0_4px_12px_rgba(8,116,71,0.16)]" : "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"}`}>
                 {option.label}
-                <span className="text-xs tabular-nums text-slate-400">{countFor(option.id)}</span>
+                <span className={`grid min-w-6 place-items-center rounded-full px-1.5 py-0.5 text-xs tabular-nums ${active ? "bg-white text-pine-800" : "bg-slate-100 text-slate-600"}`}>{countFor(option.id)}</span>
               </button>
             );
           })}
@@ -175,41 +179,22 @@ export function RoomsPanel({ day, savingIds, onCount }: {
           detail="Cuando Recepción registre una estadía para este día, aparecerá aquí automáticamente." />
       ) : lists.hasQuery && total === 0 ? (
         <EmptyState title="No se encontraron habitaciones" detail={`No hay habitaciones que coincidan con "${query.trim()}".`} />
-      ) : filter === "unregistered" && lists.unregistered.length === 0 ? (
-        <EmptyState title={EMPTY_TEXT.unregistered.title} detail={EMPTY_TEXT.unregistered.detail} />
-      ) : filter === "inProgress" && lists.inProgress.length === 0 ? (
-        <EmptyState title={EMPTY_TEXT.inProgress.title} detail={EMPTY_TEXT.inProgress.detail} />
+      ) : filter === "pending" && lists.pending.length === 0 ? (
+        <EmptyState title={EMPTY_TEXT.pending.title} detail={EMPTY_TEXT.pending.detail} />
+      ) : filter === "partial" && lists.partial.length === 0 ? (
+        <EmptyState title={EMPTY_TEXT.partial.title} detail={EMPTY_TEXT.partial.detail} />
       ) : filter === "complete" && lists.complete.length === 0 ? (
         <EmptyState title={EMPTY_TEXT.complete.title} detail={EMPTY_TEXT.complete.detail} />
       ) : (
-        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-          {filter === "unregistered" ? (
-            renderGroup("unregistered")
-          ) : filter === "inProgress" ? (
-            renderGroup("inProgress")
-          ) : filter === "complete" ? (
-            renderGroup("complete")
-          ) : (
-            <>
-              {renderGroup("unregistered")}
-              {renderGroup("inProgress")}
-              {lists.complete.length > 0 && (
-                <details className="group border-t border-slate-100">
-                  <summary className="flex list-none cursor-pointer items-center gap-3 px-4 py-2.5 transition-colors hover:bg-slate-50">
-                    <h2 className="group-label">Completas</h2>
-                    <span className="text-xs font-medium tabular-nums text-slate-400">{lists.complete.length}</span>
-                    <span className="ml-auto grid size-6 place-items-center rounded-full text-sm leading-none text-slate-400 transition-transform group-open:rotate-90" aria-hidden>›</span>
-                  </summary>
-                  <div className="divide-y divide-slate-100">
-                    {lists.complete.map((stay) => (
-                      <RoomRow key={stay.stayId} stay={stay} dayDate={day.date} isFuture={isFuture}
-                        saving={savingIds.has(stay.stayId)} onCount={onCount} />
-                    ))}
-                  </div>
-                </details>
-              )}
-            </>
-          )}
+        <div>
+          <div className="hidden grid-cols-[minmax(140px,1.15fr)_125px_105px_130px_170px] gap-4 rounded-t-2xl border border-b-0 border-slate-200 bg-[#f1f5f2] px-5 py-2.5 text-xs font-semibold text-slate-500 lg:grid">
+            <span>Habitación</span><span>Estado</span><span>Pasajeros</span><span>Registrados</span><span className="text-center">Desayuno</span>
+          </div>
+          <div className="space-y-2 lg:space-y-0 lg:overflow-hidden lg:rounded-b-2xl lg:border lg:border-slate-200 lg:bg-white">
+            {visible.map((stay) => (
+              <RoomRow key={stay.stayId} stay={stay} canEdit={canEdit} saving={savingIds.has(stay.stayId)} onCount={onCount} />
+            ))}
+          </div>
         </div>
       )}
     </div>

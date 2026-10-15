@@ -131,14 +131,38 @@ npx wrangler d1 migrations create hlcs-desayuno nombre_de_la_migracion
 
 Editar el SQL creado en `migrations/`, probarlo localmente y volver a ejecutar lint, typecheck, build y los flujos relevantes.
 
-## Despliegue futuro
+## Despliegue a producción
 
-Esta primera entrega no crea recursos remotos ni hace deploy. Cuando corresponda:
+El Worker `hlcs-desayuno` utiliza la base D1 `hlcs-desayuno-production`, declarada en `wrangler.jsonc`. Antes de operar sobre recursos remotos, verificar siempre la cuenta activa y que el identificador de D1 coincida con la configuración:
 
-1. Autenticarse con `npx wrangler login`.
-2. Crear la base con `npx wrangler d1 create hlcs-desayuno`.
-3. Reemplazar `database_id: "local-development"` en `wrangler.jsonc` por el identificador devuelto.
-4. Aplicar SQL con `npm run db:migrate:remote`.
-5. Ejecutar `npm run deploy`.
+```bash
+npx wrangler whoami
+npx wrangler d1 info hlcs-desayuno-production
+npx wrangler d1 migrations list hlcs-desayuno-production --remote
+```
 
-Antes de producción debe evaluarse la autenticación y autorización de ambas áreas; deliberadamente no forman parte de esta versión.
+Procedimiento recomendado:
+
+1. Ejecutar tests, lint, typecheck y build desde un commit aprobado.
+2. Exportar un respaldo completo fuera del repositorio y comprobar que pueda restaurarse:
+
+   ```bash
+   npx wrangler d1 export hlcs-desayuno-production --remote --output=/ruta/segura/respaldo.sql
+   ```
+
+3. Registrar el bookmark previo mediante `wrangler d1 time-travel info hlcs-desayuno-production`.
+4. Aplicar únicamente las migraciones revisadas:
+
+   ```bash
+   npm run db:migrate:remote
+   ```
+
+5. Volver a comprobar migraciones pendientes y hacer consultas de solo lectura para validar esquema y conteos.
+6. Ejecutar `npx wrangler deploy --dry-run` sobre el build final.
+7. Desplegar con `npm run deploy` y realizar smoke tests de `/recepcion`, `/cafeteria` y los endpoints de lectura.
+
+Para revertir solamente el código, usar una versión estable identificada previamente con `wrangler deployments list` y `wrangler rollback <VERSION_ID>`. Un rollback del Worker no revierte D1. La recuperación de datos debe realizarse por separado mediante Time Travel o el respaldo SQL, después de detener escrituras y confirmar el punto exacto de restauración.
+
+> **Importante:** los scripts `test:e2e:local`, `test:browser:local`, `test:ui-p0:local` y `test:dnd:local` crean, modifican o eliminan datos para verificar flujos. Deben ejecutarse exclusivamente contra el entorno local; nunca se debe configurar `APP_URL` con la URL de producción.
+
+La aplicación todavía no incluye autenticación ni autorización; esta limitación debe considerarse antes de ampliar el acceso al Worker.

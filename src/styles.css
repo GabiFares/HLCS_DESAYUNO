@@ -38,7 +38,6 @@
 @layer components {
   /* ---- Títulos y texto ---- */
   .page-title { @apply text-2xl font-semibold tracking-tight text-pine-950 sm:text-[1.7rem]; }
-  .section-title { @apply text-base font-semibold tracking-tight text-pine-950; }
   .section-caption { @apply mt-1 text-sm text-slate-500; }
 
   /* ---- Botones ---- */
@@ -60,44 +59,12 @@
   /* ---- Tarjetas ---- */
   .card { @apply rounded-xl border border-slate-200 bg-white; }
 
-  /* ---- Datos ---- */
-  .meta-label { @apply text-[11px] font-medium uppercase tracking-wide text-slate-400; }
-  .meta-value { @apply text-sm text-slate-700; }
-
-  /* ---- Resumen del día ---- */
-  .stat-label { @apply text-[10px] font-medium uppercase tracking-wide text-slate-400; }
-  .stat-value { @apply text-lg font-semibold leading-tight tabular-nums text-pine-950 sm:text-xl; }
-
-  /* ---- Pestañas ---- */
-  .tab {
-    @apply -mb-px inline-flex min-h-11 items-center gap-2 border-b-2 border-transparent px-3.5 text-sm font-medium
-    text-slate-500 transition-colors hover:text-slate-800 sm:px-4;
-  }
-  .tab-active { @apply border-pine-700 font-semibold text-pine-900; }
-
-  /* ---- Segmento de filtros ---- */
-  .segment-btn {
-    @apply inline-flex min-h-11 items-center gap-1.5 rounded-md px-2.5 text-sm font-medium text-slate-500
-    transition-colors hover:text-slate-800 sm:px-3 whitespace-nowrap;
-  }
-  .segment-btn-active { @apply bg-white font-semibold text-pine-900 shadow-sm; }
-
   /* ---- Pestañas de sección (tablist / sub-vistas) ---- */
   .seg-pill {
     @apply inline-flex min-h-11 items-center justify-center gap-1.5 rounded-lg px-1.5 text-[13px] font-medium leading-tight
     text-slate-600 transition-colors hover:text-pine-900;
   }
   .seg-pill-active { @apply bg-white font-semibold text-pine-900 shadow-sm; }
-
-  /* ---- Etiqueta de grupo ---- */
-  .group-label { @apply text-[11px] font-semibold uppercase tracking-wide text-slate-400; }
-
-  /* ---- Contador desayuno ---- */
-  .counter-button {
-    @apply grid size-11 place-items-center rounded-lg border border-slate-300 bg-white text-xl leading-none text-pine-900
-    transition-[background-color,border-color] hover:border-slate-400 hover:bg-slate-50 active:scale-[0.96] disabled:hover:bg-white select-none;
-  }
-  .counter-button-add { @apply border-pine-800 bg-pine-800 text-white hover:border-pine-900 hover:bg-pine-900 disabled:hover:border-pine-800 disabled:hover:bg-pine-800; }
 
   /* ---- Inventario ---- */
   .stock-input {
@@ -108,4 +75,10 @@
   /* ---- Utilidades de navegación de fecha ---- */
   .date-arrow { @apply grid size-11 shrink-0 place-items-center rounded-lg bg-slate-100 text-xl leading-none text-slate-600 transition-colors hover:bg-slate-200 disabled:opacity-40; }
   .mini-button { @apply grid size-11 shrink-0 place-items-center rounded-md border border-slate-200 bg-white text-sm text-slate-600 transition-colors hover:bg-slate-50; }
+}
+
+@utility reception-header-pattern {
+  background-image:
+    radial-gradient(circle at 80% 110%, rgba(79, 137, 91, 0.13), transparent 27%),
+    linear-gradient(118deg, transparent 0 58%, rgba(226, 239, 229, 0.42) 58% 67%, transparent 67%);
 }

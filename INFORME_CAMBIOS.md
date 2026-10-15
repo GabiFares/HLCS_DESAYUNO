@@ -1,48 +1,99 @@
-# Informe de cambios - feature/importar-reservas-desbravador
+# Informe técnico — `feature/ui-refinement`
 
-## Estado
-- Rama: `feature/importar-reservas-desbravador`
-- Commit: 220defa
-- Working tree: limpio
-- Sin push/merge (pendiente)
+Fecha de revisión: 15 de octubre de 2026.
 
-## 1. Migración D1
-- `migrations/0004_desbravador_import.sql`: tabla `stay_imports` para auditoría (counts por resultado). Eliminado `stay_import_items` para permitir escritura transaccional única con `db.batch()`.
+## Estado del trabajo
 
-## 2. Núcleo compartido (shared/desbravador)
-- `normalize.ts`: normalización de texto y habitaciones (case/acentos/espacios). Convergencia de habitaciones numéricas (elimina ceros a izquierda) para evitar duplicados entre "303" y "0303".
-- `types.ts`: contratos de parseo/plan/preview/result.
-- `extract.ts`: extracción de texto PDF vía `unpdf` (server-side). Configura pdf.js con `definePDFJSModule(() => import("unpdf/pdfjs"))` para bundle único en Worker. Propaga errores de dominio (`ReportError`).
-- `parser.ts`: parser posicional tolerante al PDF real. Detección de encabezado robusta (interpolación por ancho de caracteres, búsqueda por posición ante fusión de ítems por pdf.js). Patrones flexibles para etiquetas (`HABITACI`, `OPERAC`, `DESCRIPC`) y detección del informe por indicadores (`INFORME`, `DETALLE DIARIO`, `OCUPACION`, columnas). Reconstrucción de filas partidas, filtrado de ruido (totales/pies), transferencias marcadas para revisión, deduplicación intra-informe.
-- `plan.ts`: deduplicación contra D1 (`(roomNumber normalizado, checkInDate)`). Decide `create/update/unchanged/review/ignored`. Protecciones de integridad con historial de desayunos: no reduce PAX por debajo de servidos, no acorta check-out excluyendo desayunos existentes, no modifica estadías finalizadas con diferencias. Transferencias siempre van a revisión.
+- Worktree: `HLCS_DESAYUNO-ui-refinement`.
+- Rama: `feature/ui-refinement`.
+- Los cambios están sin commit y sin push, por indicación del usuario.
+- Se preservó la importación de reservas de Desbravador y el trabajo previo de Recepción.
+- No se modificaron migraciones, esquema D1, endpoints ni reglas de negocio del Worker durante el refinamiento visual.
 
-## 3. Worker (backend)
-- `worker/desbravador/import.ts`: endpoints `POST /api/import/desbravador/preview` y `POST /api/import/desbravador/apply`. Preview sin escritura; apply vuelve a parsear y resuelve contra estado actual de D1 en `db.batch()` (transaccional). Escribe auditoría en `stay_imports` y devuelve conteos + `importId`.
-- `worker/index.ts`: registra rutas de importación.
-- `worker/http.ts`: errores HTTP (reutilizado).
+## Alcance implementado
 
-## 4. Frontend
-- `src/lib/api.ts`: helpers `previewDesbravador(file)` y `applyDesbravador(file)` con FormData (sin forzar `Content-Type` JSON).
-- `src/recepcion/ImportModal.tsx`: modal mobile-first con preview por bloques (Nuevas/Actualizaciones/Para revisar/Ignoradas), conteos, carga/apply y resultado final. UI pulida (bordes redondeados, espaciados, estados busy).
-- `src/recepcion/ReceptionPage.tsx`: botón único "Importar reservas", eliminación de creación manual. Recarga automática tras aplicar. Textos de empty state actualizados para flujo solo-import.
-- `shared/types.ts`: agrega `source?: "manual" | "desbravador"` y `externalId?: string | null` a `Stay`.
+### Recepción
 
-## 5. Tests
-- `tests/desbravadorParser.test.ts` (21): casos normales, operaciones, no-HOSPEDAJE, filas partidas, transferencias, validaciones, varias páginas, duplicados intra-informe, normalización, no-reconocimiento.
-- `tests/desbravadorPlan.test.ts` (14): nuevas, idempotencia, actualizaciones, protección desayunos, ambiguas, no importables.
-- `tests/pdfText.test.ts` (5): integración real con `unpdf` (encabezado fusionado, varias páginas, rechazo PDF inválido, propagación errores). Verifica robustez frente a fusión de ítems de pdf.js.
-- `tests/helpers/pdfFixture.ts`: generador sintético anonimizado para reproducir grilla/particiones.
+- Cabecera responsive con el logo oficial de Hotel Los Cedros.
+- El botón de importación conserva texto cuando hay espacio y queda como botón de icono en anchos reducidos.
+- Navegación por fecha con calendario, búsqueda y filtros adaptables.
+- Selector único de filtro en móvil y botones compactos desde `640px`.
+- Tarjetas móviles compactas que admiten identificadores de habitación largos sin superponer el estado.
+- Tabla compacta en escritorio, manteniendo edición, check-out, observaciones e importación.
+- Confirmación de check-out propia, con bloqueo del scroll, cierre por Escape, restauración de foco y ciclo de foco dentro del diálogo.
 
-Total: 40 tests, 100% pasando.
+### Cafetería — Habitaciones
 
-## 6. Configuración/Build
-- `vite.config.ts`: `inlineDynamicImports: true` para environment `hlcs_desayuno` (evita `import()` dinámico a chunk separado en Worker con `unpdf/pdfjs`).
-- `tsconfig.test.json`, referencia en `tsconfig.json`, habilitado `.ts` en app. Dependencias: `unpdf@1.8.1`, `@types/node`.
-- Script `npm test` agregado.
+- Cabecera con logo oficial y título único `Cafetería`.
+- Resumen diario separado correctamente por unidades:
+  - `Habitaciones de hoy`: cantidad de estadías incluidas en la fecha.
+  - `Desayunos pendientes`: suma de pasajeros todavía no registrados.
+  - `Ya desayunaron`: suma de pasajeros registrados.
+  - progreso: pasajeros registrados sobre pasajeros previstos.
+- Las tres métricas son accesos directos a `Todas`, `Pendientes` y `Completas`, respectivamente.
+- Estados de habitación:
+  - `Pendiente`: cero desayunos registrados.
+  - `Parcial`: al menos uno, pero menos que el total de pasajeros.
+  - `Completa`: total de pasajeros registrado.
+- El filtro `Pendientes` incluye habitaciones parciales (`servedCount < guestCount`); `Parciales` es un subconjunto específico.
+- Las habitaciones completas mantienen el control `− número +` para corregir errores durante el día actual.
+- La interfaz deja esos controles en solo lectura cuando la fecha seleccionada no es hoy.
+- Vista tabular compacta en escritorio y tarjetas compactas en móvil.
+- Stock, Notas y Administración de productos conservan sus funciones existentes.
 
-## 7. Documentación
-- `CHANGES_IMPORT.md`: resumen funcional/técnico y notas sobre importación múltiple y superposición.
+## Decisiones técnicas relevantes
 
-## Validación end-to-end
-- PDF real probado: preview → 200 OK con 20 reservas creadas, 1 en revisión (transferencia), 32 ignoradas. Apply correcto. Idempotencia verificada (unchanged en re-import). Múltiples imports seguros.
-- Calidad: lint/typecheck/build verdes. UI responsiva mobile-first.
+- El filtro de Cafetería es estado controlado por `DayContent`, para que el selector, los botones y los accesos directos del resumen compartan una única fuente de verdad.
+- El guardado de desayunos continúa siendo optimista, serializado por habitación y protegido frente a respuestas fuera de orden.
+- La restricción “editar únicamente hoy” se aplica en la interfaz, respetando la instrucción de no cambiar la API ni las reglas de negocio. El endpoint preexistente continúa rechazando fechas futuras, pero admite fechas pasadas; endurecer esa garantía en servidor requeriría una decisión explícita de negocio.
+- El componente `HotelLogo` usa siempre el recurso oficial `public/logos/hotel-los-cedros.png`; se eliminó la alternativa visual genérica del componente.
+- Los controles operativos mantienen un objetivo táctil mínimo de 44 px.
+- No se agregó navegación cruzada ni sidebar.
+
+## Validación automatizada y visual
+
+Comandos de calidad:
+
+```bash
+npm test
+npm run lint
+npm run typecheck
+npm run build
+```
+
+La prueba `npm run test:browser:local`, con Vite y Chrome headless activos, cubre:
+
+- Recepción y Cafetería a 320, 375, 390, 393, 430, 768 y 1280 px.
+- Ausencia de overflow horizontal.
+- Tamaño de controles visibles.
+- Habitaciones cortas y largas.
+- Persistencia de inventario y notas.
+- Actualización automática de Cafetería sin perder pestaña, fecha ni búsqueda.
+- Atajo del resumen a `Completas` y disponibilidad del decremento correctivo en una habitación completa de hoy.
+- Ajuste del formulario modal de Recepción en todos los anchos móviles solicitados.
+
+`scripts/verify-ui-p0.mjs` genera ahora fechas relativas a la fecha uruguaya actual para que la prueba de importación no caduque con el paso del tiempo. Los scripts restituyen los datos temporales que modifican durante la ejecución.
+
+## Archivos del refinamiento
+
+- `src/recepcion/ReceptionPage.tsx`
+- `src/recepcion/StayCard.tsx`
+- `src/cafeteria/CafeteriaPage.tsx`
+- `src/cafeteria/RoomsPanel.tsx`
+- `src/cafeteria/ProductManager.tsx`
+- `src/components/DateNavigator.tsx`
+- `src/components/HotelLogo.tsx`
+- `src/styles.css`
+- `public/logos/hotel-los-cedros.png`
+- `scripts/verify-browser.mjs`
+- `scripts/verify-ui-p0.mjs`
+- `scripts/verify-dnd.mjs`
+
+## Fuera de alcance y aclaraciones
+
+- No se rediseñaron Stock ni Notas; solamente se preservaron y se verificó su funcionamiento.
+- Las confirmaciones de eliminación de estadías y de desactivación de productos siguen usando `window.confirm`; el diálogo personalizado solicitado corresponde al check-out.
+- No hay autenticación en esta versión, tal como documenta el `README.md`.
+- No se hizo deploy, commit ni push.
+
+El detalle histórico de la importación Desbravador permanece en `CHANGES_IMPORT.md`.
